@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentaMaq - Alquiler de Maquinaria de Construcción</title>
+    <meta name="description" content="Plataforma de alquiler de maquinaria de construcción entre empresas y particulares">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/" class="navbar-brand">
+                🏗️ RentaMaq
+            </a>
+            <ul class="navbar-menu" id="navbarMenu">
+                <li><a href="/">Inicio</a></li>
+                <li><a href="#" onclick="showMachinery()">Maquinaria</a></li>
+                <li><a href="#" onclick="showLogin()">Iniciar Sesión</a></li>
+                <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
+            </ul>
+            <ul class="navbar-menu" id="navbarMenuAuth" style="display: none;">
+                <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
+                <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
+                <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
+                <li><a href="#" onclick="logout()" class="btn btn-danger">Cerrar Sesión</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <h1>🏗️ Alquila Maquinaria de Construcción</h1>
+                <p>La plataforma líder para alquilar y publicar maquinaria de obra en España</p>
+                <button class="btn btn-primary btn-lg" onclick="scrollToSearch()">Buscar Maquinaria</button>
+                <button class="btn btn-outline btn-lg" onclick="showRegister()">Publicar Máquina</button>
+            </div>
+        </section>
+
+        <!-- Search Box -->
+        <section class="container">
+            <div class="search-box" id="searchBox">
+                <h2 class="text-center mb-3">Busca la maquinaria que necesitas</h2>
+                <form class="search-form" id="searchForm" onsubmit="searchMachinery(event)">
+                    <div class="form-group">
+                        <label for="machineryType">Tipo de Máquina</label>
+                        <select class="form-control" id="machineryType">
+                            <option value="">Todas</option>
+                            <option value="excavadora">Excavadora</option>
+                            <option value="retroexcavadora">Retroexcavadora</option>
+                            <option value="dumper">Dumper</option>
+                            <option value="pala_cargadora">Pala Cargadora</option>
+                            <option value="hormigonera">Hormigonera</option>
+                            <option value="camion_grua">Camión Grúa</option>
+                            <option value="grua_torre">Grúa Torre</option>
+                            <option value="manipulador_telescopico">Manipulador Telescópico</option>
+                            <option value="plataforma_elevadora">Plataforma Elevadora</option>
+                            <option value="carretilla_elevadora">Carretilla Elevadora</option>
+                            <option value="compactadora">Compactadora</option>
+                            <option value="bulldozer">Bulldozer</option>
+                            <option value="martillo_hidraulico">Martillo Hidráulico</option>
+                            <option value="generador">Generador</option>
+                            <option value="compresor">Compresor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="locationCity">Ciudad</label>
+                        <input type="text" class="form-control" id="locationCity" placeholder="Madrid, Barcelona...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="maxPrice">Precio Máximo/día (€)</label>
+                        <input type="number" class="form-control" id="maxPrice" placeholder="500">
+                    </div>
+                    
+                    <div class="form-group" style="align-self: flex-end;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Machinery Results -->
+        <section class="container">
+            <div id="machineryResults">
+                <h2 class="text-center mb-3">Maquinaria Disponible</h2>
+                <div class="card-grid" id="machineryGrid">
+                    <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
+                </div>
+                <div id="loadingSpinner" style="display: none;">
+                    <div class="spinner"></div>
+                    <p class="text-center">Cargando maquinaria...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="container mt-4">
+            <h2 class="text-center mb-4">¿Por qué elegir RentaMaq?</h2>
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>✅ Verificado</h3>
+                        <p>Todas las máquinas están verificadas y en buenas condiciones</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>💰 Precios Competitivos</h3>
+                        <p>Ahorra hasta un 40% comparado con alquileres tradicionales</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>🚚 Entrega Flexible</h3>
+                        <p>Entrega directa a tu obra o recogida en ubicación</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>🔒 Seguro</h3>
+                        <p>Pagos seguros y protección completa para propietarios y arrendatarios</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RentaMaq - Plataforma de Alquiler de Maquinaria</p>
+            <p>
+                <a href="/docs" style="color: white; margin: 0 10px;">Documentación API</a> |
+                <a href="#" style="color: white; margin: 0 10px;">Términos</a> |
+                <a href="#" style="color: white; margin: 0 10px;">Privacidad</a> |
+                <a href="#" style="color: white; margin: 0 10px;">Contacto</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/search.js"></script>
+</body>
+</html>
