@@ -2,10 +2,11 @@
 Aplicación Principal FastAPI - RentaMaq
 Plataforma de alquiler de maquinaria de construcción
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pathlib import Path
 from app.core.config import settings
 from app.api.v1.endpoints import auth, users, machinery, bookings
@@ -31,6 +32,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Handler global: convierte errores de validación en JSON legible
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    errors = []
+    for error in exc.errors():
+        field = " -> ".join(str(loc) for loc in error["loc"] if loc != "body")
+        errors.append(f"{field}: {error['msg']}" if field else error["msg"])
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "; ".join(errors)}
+    )
+
+# Handler global: captura errores 500 inesperados y devuelve JSON
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error interno del servidor: {type(exc).__name__}: {str(exc)}"}
+    )
 
 # Montar archivos estáticos (CSS, JS, imágenes)
 static_path = Path(__file__).parent.parent.parent / "frontend" / "static"

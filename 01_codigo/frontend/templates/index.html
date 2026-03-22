@@ -6,6 +6,9 @@
     <title>RentaMaq - Alquiler de Maquinaria de Construcción</title>
     <meta name="description" content="Plataforma de alquiler de maquinaria de construcción entre empresas y particulares">
     <link rel="stylesheet" href="/static/css/main.css">
+    <!-- Leaflet.js - Mapas libres (OpenStreetMap, sin API key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
     <!-- Navbar -->
@@ -21,6 +24,12 @@
                 <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
             </ul>
             <ul class="navbar-menu" id="navbarMenuAuth" style="display: none;">
+                <li>
+                    <a href="#" onclick="showProfile()" style="display:flex;align-items:center;gap:8px;">
+                        <img id="navAvatar" src="" alt="Perfil" class="avatar-nav">
+                        <span id="navUserName"></span>
+                    </a>
+                </li>
                 <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
                 <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
                 <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
@@ -88,7 +97,13 @@
         <!-- Machinery Results -->
         <section class="container">
             <div id="machineryResults">
-                <h2 class="text-center mb-3">Maquinaria Disponible</h2>
+                <div class="results-header">
+                    <h2 class="mb-3">Maquinaria Disponible</h2>
+                    <div class="map-view-buttons" id="viewToggleButtons" style="display:none;">
+                        <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">☰ Lista</button>
+                        <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">🗺️ Mapa</button>
+                    </div>
+                </div>
                 <div class="card-grid" id="machineryGrid">
                     <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
                 </div>
@@ -97,6 +112,15 @@
                     <p class="text-center">Cargando maquinaria...</p>
                 </div>
             </div>
+        </section>
+
+        <!-- Mapa siempre visible, sin necesidad de login -->
+        <section class="container mt-2 mb-4">
+            <h2 class="mb-1">Mapa de Maquinaria</h2>
+            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:0.75rem;">
+                Haz clic en un marcador para ver los detalles de la máquina
+            </p>
+            <div id="leafletMap" style="height:480px;border-radius:var(--border-radius);box-shadow:var(--box-shadow);"></div>
         </section>
 
         <!-- Features Section -->
@@ -145,8 +169,9 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/auth.js"></script>
-    <script src="/static/js/search.js"></script>
+    <script src="/static/js/main.js?v=6"></script>
+    <script src="/static/js/auth.js?v=6"></script>
+    <script src="/static/js/search.js?v=6"></script>
+    <script src="/static/js/map.js?v=2"></script>
 </body>
 </html>

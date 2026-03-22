@@ -4,40 +4,18 @@ Maneja autenticación JWT y hashing de contraseñas
 """
 from datetime import datetime, timedelta
 from typing import Optional, Union
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import HTTPException, status
 from app.core.config import settings
 
-# Configuración para hashing de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Verifica si una contraseña coincide con su hash
-    
-    Args:
-        plain_password: Contraseña en texto plano
-        hashed_password: Contraseña hasheada
-        
-    Returns:
-        bool: True si coinciden, False si no
-    """
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 def get_password_hash(password: str) -> str:
-    """
-    Genera un hash de la contraseña
-    
-    Args:
-        password: Contraseña en texto plano
-        
-    Returns:
-        str: Contraseña hasheada
-    """
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -52,12 +30,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         str: Token JWT codificado
     """
     to_encode = data.copy()
-    
+    # jose exige que 'sub' sea string (RFC 7519 §4.1.2)
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -74,6 +55,8 @@ def create_refresh_token(data: dict) -> str:
         str: Token JWT de refresco
     """
     to_encode = data.copy()
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

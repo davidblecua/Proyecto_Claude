@@ -35,14 +35,15 @@ async def get_current_user(
     payload = decode_token(token)
     validate_token_type(payload, "access")
     
-    # Extraer user_id
-    user_id: Optional[int] = payload.get("sub")
-    if user_id is None:
+    # Extraer user_id (se guarda como string en el token, convertir a int)
+    sub = payload.get("sub")
+    if sub is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No se pudo validar las credenciales",
         )
-    
+    user_id = int(sub)
+
     # Buscar usuario en base de datos
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
