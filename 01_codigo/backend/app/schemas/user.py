@@ -22,7 +22,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema para crear usuario"""
     password: str = Field(..., min_length=8, max_length=100)
-    role: Optional[UserRole] = UserRole.CONSUMER
+    role: Optional[UserRole] = UserRole.PUBLISHER
     
     @validator('password')
     def password_strength(cls, v):

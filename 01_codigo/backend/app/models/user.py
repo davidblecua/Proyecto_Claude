@@ -34,7 +34,7 @@ class User(Base):
     full_name = Column(String(255), nullable=True)
     
     # Rol y estado
-    role = Column(SQLEnum(UserRole), default=UserRole.CONSUMER, nullable=False)
+    role = Column(SQLEnum(UserRole), default=UserRole.PUBLISHER, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     
