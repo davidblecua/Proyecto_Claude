@@ -1020,6 +1020,30 @@ body {
     color: var(--danger-color);
 }
 
+/* ===== FILTRO DE DISTANCIA ===== */
+.filter-distance-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.distance-slider {
+    flex: 1;
+    min-width: 160px;
+    max-width: 320px;
+    accent-color: var(--primary-color);
+    height: 4px;
+    cursor: pointer;
+}
+
+.distance-value {
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 60px;
+    font-size: 0.95rem;
+}
+
 /* ===== CHAT / MENSAJERIA ===== */
 .chat-section {
     margin-top: 1.25rem;

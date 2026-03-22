@@ -249,6 +249,8 @@ let currentMachineryList = [];
 let activeTypeFilter = '';
 let dateFilterActive = false;
 let isLoadingMachinery = false;
+let userCoordinates = null;   // {lat, lng} del usuario
+let activeDistanceKm = null;  // null = sin filtro
 
 /**
  * Carga la maquinaria inicial y activa los botones de vista lista/mapa
@@ -661,9 +663,116 @@ function renderFilterBar() {
         </div>
     `;
 
+    // Seccion de distancia (siempre visible)
+    const distSection = document.createElement('div');
+    distSection.className = 'filter-section';
+    distSection.innerHTML = `
+        <span class="filter-section-label">Filtrar por distancia</span>
+        <div class="filter-distance-top">
+            <button class="btn btn-secondary btn-sm" id="locBtn" onclick="requestUserLocation()">
+                Usar mi ubicacion
+            </button>
+            <span id="userLocStatus" style="font-size:0.82rem;color:var(--gray-600);"></span>
+            ${activeDistanceKm ? `<button class="btn-outline-sm" onclick="clearDistanceFilter()">✕ Limpiar</button>` : ''}
+        </div>
+        <div id="distanceControls" style="display:${userCoordinates ? 'flex' : 'none'};align-items:center;gap:0.75rem;margin-top:0.6rem;flex-wrap:wrap;">
+            <input type="range" class="distance-slider" id="distanceSlider"
+                   min="10" max="500" step="10" value="${activeDistanceKm || 100}"
+                   oninput="document.getElementById('distanceVal').textContent=this.value+' km';applyDistanceFilter(parseInt(this.value))">
+            <span class="distance-value" id="distanceVal">${activeDistanceKm || 100} km</span>
+        </div>
+        ${userCoordinates && activeDistanceKm ? `<div id="distanceStatus" style="font-size:0.82rem;color:var(--success-color);margin-top:0.3rem;"></div>` : ''}
+    `;
+    bar.appendChild(distSection);
+
     // Insertar antes del grid (despues del results-header)
     machineryResults.insertBefore(bar, grid);
 }
+
+// ── Helpers de distancia ─────────────────────────────────────────────────────
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getMachineryCoords(m) {
+    if (m.latitude && m.longitude) return [m.latitude, m.longitude];
+    if (typeof SPAIN_CITIES !== 'undefined') {
+        const key = (m.location_city || '').toLowerCase().trim();
+        if (SPAIN_CITIES[key]) return SPAIN_CITIES[key];
+        const provKey = (m.location_province || '').toLowerCase().trim();
+        if (SPAIN_CITIES[provKey]) return SPAIN_CITIES[provKey];
+    }
+    return null;
+}
+
+function getFilteredList() {
+    let list = activeTypeFilter
+        ? currentMachineryList.filter(m => m.machinery_type === activeTypeFilter)
+        : [...currentMachineryList];
+
+    if (userCoordinates && activeDistanceKm) {
+        list = list.filter(m => {
+            const coords = getMachineryCoords(m);
+            if (!coords) return true; // incluir si no hay coords
+            const km = haversineKm(userCoordinates.lat, userCoordinates.lng, coords[0], coords[1]);
+            return km <= activeDistanceKm;
+        });
+    }
+    return list;
+}
+
+function requestUserLocation() {
+    const btn = document.getElementById('locBtn');
+    const status = document.getElementById('userLocStatus');
+    if (btn) btn.textContent = 'Detectando...';
+
+    if (!navigator.geolocation) {
+        showAlert('Tu navegador no soporta geolocalizacion', 'danger');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            userCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            activeDistanceKm = 100;
+            renderFilterBar();
+            // Activar controles y mostrar ubicacion
+            const controls = document.getElementById('distanceControls');
+            const statusEl = document.getElementById('userLocStatus');
+            if (controls) controls.style.display = 'flex';
+            if (statusEl) statusEl.textContent = `Ubicacion detectada (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`;
+            applyDistanceFilter(100);
+        },
+        () => {
+            showAlert('No se pudo obtener tu ubicacion. Activa el permiso en el navegador.', 'warning');
+            if (btn) btn.textContent = 'Usar mi ubicacion';
+        }
+    );
+}
+
+function applyDistanceFilter(km) {
+    activeDistanceKm = km;
+    if (!userCoordinates) return;
+
+    const filtered = getFilteredList();
+    renderMachinery(filtered);
+
+    const statusEl = document.getElementById('distanceStatus');
+    if (statusEl) statusEl.textContent = `${filtered.length} maquina${filtered.length !== 1 ? 's' : ''} en ${km} km`;
+}
+
+function clearDistanceFilter() {
+    activeDistanceKm = null;
+    renderFilterBar();
+    renderMachinery(getFilteredList());
+}
+
+// ── Filtros tipo y fecha (actualizados para respetar distancia) ───────────────
 
 function applyTypeFilter(type) {
     activeTypeFilter = type;
@@ -680,11 +789,7 @@ function applyTypeFilter(type) {
     const clearBtn = document.getElementById('clearDateFilterBtn');
     if (clearBtn) clearBtn.style.display = 'none';
 
-    const filtered = activeTypeFilter
-        ? currentMachineryList.filter(m => m.machinery_type === activeTypeFilter)
-        : currentMachineryList;
-
-    renderMachinery(filtered);
+    renderMachinery(getFilteredList());
 }
 
 async function applyDateFilter() {
