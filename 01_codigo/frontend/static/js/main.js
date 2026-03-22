@@ -518,6 +518,9 @@ function showMachineryModal(machinery) {
         endEl.min = today;
         endEl.value = next30.toISOString().split('T')[0];
     }
+
+    // Cargar el calendario de disponibilidad automaticamente al abrir
+    checkAvailability(machinery.id);
 }
 
 /**
