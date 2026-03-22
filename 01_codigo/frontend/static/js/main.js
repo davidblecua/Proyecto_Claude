@@ -109,6 +109,7 @@ function updateNavbarForAuthenticatedUser() {
         if (navUserName && appState.currentUser) {
             navUserName.textContent = appState.currentUser.full_name.split(' ')[0];
         }
+        updateUnreadBadge();
     } else {
         navbarMenu.style.display = 'flex';
         navbarMenuAuth.style.display = 'none';
@@ -456,18 +457,44 @@ function showMachineryModal(machinery) {
                     <div id="availResult_${machinery.id}" style="margin-top:0.75rem;"></div>
                 </div>
 
+                <!-- Chat con el propietario -->
+                ${appState.isAuthenticated && appState.currentUser.id !== machinery.owner_id ? `
+                <div class="chat-section" id="chatSection_${machinery.id}">
+                    <div class="chat-header">
+                        <span>Contactar al propietario</span>
+                        <span class="chat-status" id="chatStatus_${machinery.id}"></span>
+                    </div>
+                    <div class="chat-messages" id="chatMessages_${machinery.id}">
+                        <div style="text-align:center;padding:1rem;color:var(--gray-500);font-size:0.85rem;">Cargando mensajes...</div>
+                    </div>
+                    <div class="chat-input-row">
+                        <input type="text" class="form-control" id="chatInput_${machinery.id}"
+                               placeholder="Escribe un mensaje..." maxlength="2000"
+                               onkeydown="if(event.key==='Enter')sendChatMessage(${machinery.id},${machinery.owner_id})">
+                        <button class="btn btn-primary btn-sm" onclick="sendChatMessage(${machinery.id},${machinery.owner_id})">Enviar</button>
+                    </div>
+                </div>` : appState.isAuthenticated ? '' : `
+                <div class="alert alert-info" style="margin-top:1rem;margin-bottom:0;">
+                    <a href="#" onclick="document.getElementById('machineryDetailModal').remove();showLogin()">Inicia sesion</a> para contactar al propietario
+                </div>`}
+
                 <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;">
                     ${appState.isAuthenticated
-                        ? `<button class="btn btn-primary" onclick="initiateBooking(${machinery.id}); document.getElementById('machineryDetailModal').remove();">📅 Reservar Ahora</button>`
-                        : '<p class="alert alert-info" style="margin:0;">Debes iniciar sesión para reservar</p>'}
-                    <button class="btn btn-secondary" onclick="document.getElementById('machineryDetailModal').remove()">Cerrar</button>
+                        ? `<button class="btn btn-primary" onclick="initiateBooking(${machinery.id}); document.getElementById('machineryDetailModal').remove();">Reservar Ahora</button>`
+                        : ''}
+                    <button class="btn btn-secondary" onclick="closeMachineryModal()">Cerrar</button>
                 </div>
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    modal.addEventListener('click', e => { if (e.target === modal) closeMachineryModal(); });
+
+    // Iniciar chat si el usuario esta autenticado y no es el propietario
+    if (appState.isAuthenticated && appState.currentUser.id !== machinery.owner_id) {
+        startChatPolling(machinery.id, machinery.owner_id);
+    }
 
     // Set min date to today
     const today = new Date().toISOString().split('T')[0];
@@ -733,6 +760,229 @@ function renderMachineryWithAvailability(machineryList, availMap, start, end) {
 function formatDateShort(dateStr) {
     const [, m, d] = dateStr.split('-');
     return `${d}/${m}`;
+}
+
+// ===== CHAT / MENSAJERIA =====
+
+let chatPollInterval = null;
+let chatCurrentMachineryId = null;
+let chatCurrentOtherId = null;
+
+function closeMachineryModal() {
+    stopChatPolling();
+    const modal = document.getElementById('machineryDetailModal');
+    if (modal) modal.remove();
+}
+
+async function loadChatMessages(machineryId, otherUserId) {
+    const container = document.getElementById(`chatMessages_${machineryId}`);
+    if (!container) return;
+    try {
+        const msgs = await apiRequest(`/messages/conversation/${machineryId}/${otherUserId}`);
+        renderChatMessages(msgs, machineryId);
+        updateUnreadBadge();
+    } catch (e) {
+        // silencioso si hay error de red en el poll
+    }
+}
+
+function renderChatMessages(msgs, machineryId) {
+    const container = document.getElementById(`chatMessages_${machineryId}`);
+    if (!container) return;
+
+    if (msgs.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gray-500);font-size:0.85rem;">Sin mensajes. Escribe el primero.</div>';
+        return;
+    }
+
+    const myId = appState.currentUser.id;
+    container.innerHTML = msgs.map(msg => {
+        const isOwn = msg.sender_id === myId;
+        const time = new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(msg.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        return `
+            <div class="chat-bubble ${isOwn ? 'chat-own' : 'chat-other'}">
+                <div class="chat-bubble-text">${escHtml2(msg.content)}</div>
+                <div class="chat-bubble-time">${date} ${time}</div>
+            </div>`;
+    }).join('');
+
+    // Scroll al ultimo mensaje
+    container.scrollTop = container.scrollHeight;
+}
+
+function escHtml2(str) {
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function sendChatMessage(machineryId, ownerId) {
+    const input = document.getElementById(`chatInput_${machineryId}`);
+    if (!input) return;
+    const content = input.value.trim();
+    if (!content) return;
+
+    input.disabled = true;
+    try {
+        await apiRequest('/messages', {
+            method: 'POST',
+            body: JSON.stringify({ receiver_id: ownerId, machinery_id: machineryId, content })
+        });
+        input.value = '';
+        await loadChatMessages(machineryId, ownerId);
+    } catch (e) {
+        showAlert('Error al enviar el mensaje: ' + e.message, 'danger');
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+function startChatPolling(machineryId, otherUserId) {
+    stopChatPolling();
+    chatCurrentMachineryId = machineryId;
+    chatCurrentOtherId = otherUserId;
+    loadChatMessages(machineryId, otherUserId);
+    chatPollInterval = setInterval(() => {
+        loadChatMessages(chatCurrentMachineryId, chatCurrentOtherId);
+    }, 5000);
+}
+
+function stopChatPolling() {
+    if (chatPollInterval) {
+        clearInterval(chatPollInterval);
+        chatPollInterval = null;
+    }
+}
+
+async function updateUnreadBadge() {
+    if (!appState.isAuthenticated) return;
+    try {
+        const data = await apiRequest('/messages/unread-count');
+        const badge = document.getElementById('msgUnreadBadge');
+        if (badge) {
+            badge.textContent = data.unread > 0 ? data.unread : '';
+            badge.style.display = data.unread > 0 ? 'inline-flex' : 'none';
+        }
+    } catch (e) { /* ignorar */ }
+}
+
+async function showInbox() {
+    if (!appState.isAuthenticated) { showLogin(); return; }
+
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = `
+        <div class="container mt-4">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                <h2>Mis Mensajes</h2>
+                <button class="btn btn-secondary" onclick="showDashboard()">Volver al Panel</button>
+            </div>
+            <div id="inboxList"><div class="spinner"></div></div>
+        </div>`;
+
+    try {
+        const conversations = await apiRequest('/messages/inbox');
+        const list = document.getElementById('inboxList');
+        if (!conversations || conversations.length === 0) {
+            list.innerHTML = '<p class="text-center" style="color:var(--gray-600);padding:2rem;">No tienes mensajes aun.</p>';
+            return;
+        }
+        list.innerHTML = conversations.map(c => `
+            <div class="inbox-row" onclick="openConversationFromInbox(${c.machinery_id}, ${c.other_user_id}, '${escHtml2(c.other_user_name)}', '${escHtml2(c.machinery_title)}')">
+                <div class="inbox-avatar">${c.other_user_name.charAt(0).toUpperCase()}</div>
+                <div class="inbox-info">
+                    <div class="inbox-name">${escHtml2(c.other_user_name)}
+                        ${c.unread_count > 0 ? `<span class="inbox-unread-badge">${c.unread_count}</span>` : ''}
+                    </div>
+                    <div class="inbox-machinery">${escHtml2(c.machinery_title)}</div>
+                    <div class="inbox-preview">${escHtml2(c.last_message)}</div>
+                </div>
+                <div class="inbox-time">${new Date(c.last_message_at).toLocaleDateString('es-ES')}</div>
+            </div>`).join('');
+    } catch (e) {
+        showAlert('Error al cargar mensajes', 'danger');
+    }
+}
+
+function openConversationFromInbox(machineryId, otherUserId, otherName, machineryTitle) {
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = `
+        <div class="container mt-4" style="max-width:680px;">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+                <button class="btn btn-secondary btn-sm" onclick="showInbox()">Volver</button>
+                <div>
+                    <h3 style="margin:0;">${escHtml2(otherName)}</h3>
+                    <span style="font-size:0.85rem;color:var(--gray-600);">${escHtml2(machineryTitle)}</span>
+                </div>
+            </div>
+            <div class="chat-section" style="height:420px;">
+                <div class="chat-messages" id="chatMessages_inbox" style="height:320px;"></div>
+                <div class="chat-input-row">
+                    <input type="text" class="form-control" id="chatInput_inbox"
+                           placeholder="Escribe un mensaje..." maxlength="2000"
+                           onkeydown="if(event.key==='Enter')sendInboxMessage(${machineryId},${otherUserId})">
+                    <button class="btn btn-primary btn-sm" onclick="sendInboxMessage(${machineryId},${otherUserId})">Enviar</button>
+                </div>
+            </div>
+        </div>`;
+
+    // Cargar mensajes
+    (async () => {
+        const msgs = await apiRequest(`/messages/conversation/${machineryId}/${otherUserId}`);
+        const container = document.getElementById('chatMessages_inbox');
+        if (!container) return;
+        const myId = appState.currentUser.id;
+        if (msgs.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--gray-500);font-size:0.85rem;">Sin mensajes.</div>';
+        } else {
+            container.innerHTML = msgs.map(msg => {
+                const isOwn = msg.sender_id === myId;
+                const time = new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const date = new Date(msg.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+                return `<div class="chat-bubble ${isOwn ? 'chat-own' : 'chat-other'}">
+                    <div class="chat-bubble-text">${escHtml2(msg.content)}</div>
+                    <div class="chat-bubble-time">${date} ${time}</div>
+                </div>`;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+    })();
+}
+
+async function sendInboxMessage(machineryId, receiverId) {
+    const input = document.getElementById('chatInput_inbox');
+    if (!input) return;
+    const content = input.value.trim();
+    if (!content) return;
+    input.disabled = true;
+    try {
+        await apiRequest('/messages', {
+            method: 'POST',
+            body: JSON.stringify({ receiver_id: receiverId, machinery_id: machineryId, content })
+        });
+        input.value = '';
+        const msgs = await apiRequest(`/messages/conversation/${machineryId}/${receiverId}`);
+        const container = document.getElementById('chatMessages_inbox');
+        if (container) {
+            const myId = appState.currentUser.id;
+            container.innerHTML = msgs.map(msg => {
+                const isOwn = msg.sender_id === myId;
+                const time = new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const date = new Date(msg.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+                return `<div class="chat-bubble ${isOwn ? 'chat-own' : 'chat-other'}">
+                    <div class="chat-bubble-text">${escHtml2(msg.content)}</div>
+                    <div class="chat-bubble-time">${date} ${time}</div>
+                </div>`;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+    } catch (e) {
+        showAlert('Error al enviar: ' + e.message, 'danger');
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
 }
 
 /**

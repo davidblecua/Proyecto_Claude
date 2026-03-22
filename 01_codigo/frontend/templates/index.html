@@ -33,6 +33,12 @@
                 <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
                 <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
                 <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
+                <li>
+                    <a href="#" onclick="showInbox()" style="position:relative;">
+                        Mensajes
+                        <span id="msgUnreadBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--danger-color);color:white;border-radius:999px;font-size:0.65rem;min-width:16px;height:16px;padding:0 3px;align-items:center;justify-content:center;font-weight:700;"></span>
+                    </a>
+                </li>
                 <li><a href="#" onclick="logout()" class="btn btn-danger">Cerrar Sesión</a></li>
             </ul>
         </div>
@@ -169,7 +175,7 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js?v=9"></script>
+    <script src="/static/js/main.js?v=10"></script>
     <script src="/static/js/auth.js?v=7"></script>
     <script src="/static/js/search.js?v=8"></script>
     <script src="/static/js/map.js?v=3"></script>
