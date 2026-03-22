@@ -2,12 +2,13 @@
 Servicio de Maquinaria
 Contiene la lógica de negocio para gestión de maquinaria
 """
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from fastapi import HTTPException, status
-from app.models.machinery import Machinery, MachineryType
+from app.models.machinery import Machinery, MachineryType, MachineryBlock, MachineryBlockReason
 from app.schemas.machinery import MachineryCreate, MachineryUpdate, MachinerySearch
+from datetime import date, timedelta
 import json
 
 
@@ -266,6 +267,121 @@ class MachineryService:
         db.refresh(db_machinery)
         return db_machinery
     
+    @staticmethod
+    def get_availability(
+        db: Session,
+        machinery_id: int,
+        start_date: date,
+        end_date: date
+    ) -> Dict[str, str]:
+        """
+        Devuelve disponibilidad día a día para una máquina en un rango de fechas.
+
+        Returns:
+            Dict {fecha_iso: 'available' | 'booked' | 'maintenance'}
+        """
+        from app.models.booking import Booking, BookingStatus
+        from datetime import datetime, timezone
+
+        machinery = db.query(Machinery).filter(Machinery.id == machinery_id, Machinery.is_active == True).first()
+        if not machinery:
+            raise HTTPException(status_code=404, detail="Maquinaria no encontrada")
+
+        # Generar todos los días del rango
+        availability: Dict[str, str] = {}
+        current = start_date
+        while current <= end_date:
+            availability[current.isoformat()] = "available"
+            current += timedelta(days=1)
+
+        # Marcar días con reservas confirmadas/activas
+        bookings = db.query(Booking).filter(
+            Booking.machinery_id == machinery_id,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]),
+            Booking.start_date <= datetime.combine(end_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+            Booking.end_date >= datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+        ).all()
+
+        for booking in bookings:
+            b_start = booking.start_date.date()
+            b_end = booking.end_date.date()
+            current = max(b_start, start_date)
+            while current <= min(b_end, end_date):
+                availability[current.isoformat()] = "booked"
+                current += timedelta(days=1)
+
+        # Marcar días con bloqueos del propietario
+        blocks = db.query(MachineryBlock).filter(
+            MachineryBlock.machinery_id == machinery_id,
+            MachineryBlock.start_date <= datetime.combine(end_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+            MachineryBlock.end_date >= datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+        ).all()
+
+        for block in blocks:
+            b_start = block.start_date.date()
+            b_end = block.end_date.date()
+            reason = block.reason.value  # "maintenance" | "booked"
+            current = max(b_start, start_date)
+            while current <= min(b_end, end_date):
+                availability[current.isoformat()] = reason
+                current += timedelta(days=1)
+
+        return availability
+
+    @staticmethod
+    def create_block(
+        db: Session,
+        machinery_id: int,
+        start_date: date,
+        end_date: date,
+        reason: MachineryBlockReason,
+        user_id: int,
+        notes: Optional[str] = None
+    ) -> MachineryBlock:
+        """Crea un bloqueo de fechas para una máquina (solo propietario)"""
+        from datetime import datetime, timezone
+
+        machinery = db.query(Machinery).filter(Machinery.id == machinery_id).first()
+        if not machinery:
+            raise HTTPException(status_code=404, detail="Maquinaria no encontrada")
+        if machinery.owner_id != user_id:
+            raise HTTPException(status_code=403, detail="No tienes permisos sobre esta maquinaria")
+
+        block = MachineryBlock(
+            machinery_id=machinery_id,
+            start_date=datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+            end_date=datetime.combine(end_date, datetime.min.time()).replace(tzinfo=timezone.utc),
+            reason=reason,
+            notes=notes
+        )
+        db.add(block)
+        db.commit()
+        db.refresh(block)
+        return block
+
+    @staticmethod
+    def get_blocks(db: Session, machinery_id: int, user_id: int) -> List[MachineryBlock]:
+        """Obtiene los bloqueos de fechas de una máquina (solo propietario)"""
+        machinery = db.query(Machinery).filter(Machinery.id == machinery_id).first()
+        if not machinery:
+            raise HTTPException(status_code=404, detail="Maquinaria no encontrada")
+        if machinery.owner_id != user_id:
+            raise HTTPException(status_code=403, detail="No tienes permisos sobre esta maquinaria")
+        return db.query(MachineryBlock).filter(MachineryBlock.machinery_id == machinery_id).all()
+
+    @staticmethod
+    def delete_block(db: Session, block_id: int, user_id: int) -> bool:
+        """Elimina un bloqueo de fechas (solo propietario)"""
+        block = db.query(MachineryBlock).filter(MachineryBlock.id == block_id).first()
+        if not block:
+            raise HTTPException(status_code=404, detail="Bloqueo no encontrado")
+        machinery = db.query(Machinery).filter(Machinery.id == block.machinery_id).first()
+        if not machinery or machinery.owner_id != user_id:
+            raise HTTPException(status_code=403, detail="No tienes permisos sobre este bloqueo")
+        db.delete(block)
+        db.commit()
+        return True
+
     @staticmethod
     def get_machinery_types_stats(db: Session) -> dict:
         """

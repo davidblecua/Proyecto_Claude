@@ -389,43 +389,148 @@ async function viewMachineryDetails(machineryId) {
 }
 
 /**
- * Muestra un modal con detalles de la maquinaria
+ * Muestra un modal con detalles de la maquinaria y verificación de disponibilidad
  */
 function showMachineryModal(machinery) {
     const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.7); z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
-        padding: 20px;
-    `;
-    
+    modal.className = 'modal-overlay';
+    modal.id = 'machineryDetailModal';
+
+    const images = machinery.images && machinery.images.length > 0 ? machinery.images : [];
+    const imgUrl = images[0] || 'https://via.placeholder.com/600x300?text=' + encodeURIComponent(machinery.title);
+
     modal.innerHTML = `
-        <div style="background: white; border-radius: 8px; max-width: 800px; max-height: 90vh; overflow-y: auto; padding: 2rem;">
-            <h2>${machinery.title}</h2>
-            <p><strong>Tipo:</strong> ${translateMachineryType(machinery.machinery_type)}</p>
-            <p><strong>Marca:</strong> ${machinery.brand || 'No especificada'}</p>
-            <p><strong>Modelo:</strong> ${machinery.model || 'No especificado'}</p>
-            <p><strong>Año:</strong> ${machinery.year || 'No especificado'}</p>
-            <p><strong>Descripción:</strong> ${machinery.description}</p>
-            <p><strong>Ubicación:</strong> ${machinery.location_city}, ${machinery.location_province}</p>
-            <p><strong>Precio diario:</strong> ${formatPrice(machinery.daily_rate)}</p>
-            ${machinery.weekly_rate ? `<p><strong>Precio semanal:</strong> ${formatPrice(machinery.weekly_rate)}</p>` : ''}
-            ${machinery.monthly_rate ? `<p><strong>Precio mensual:</strong> ${formatPrice(machinery.monthly_rate)}</p>` : ''}
-            <p><strong>Depósito:</strong> ${formatPrice(machinery.deposit)}</p>
-            <p><strong>Entrega disponible:</strong> ${machinery.delivery_available ? 'Sí' : 'No'}</p>
-            ${machinery.delivery_cost ? `<p><strong>Coste de entrega:</strong> ${formatPrice(machinery.delivery_cost)}</p>` : ''}
-            
-            <div class="mt-3">
-                ${appState.isAuthenticated 
-                    ? `<button class="btn btn-primary" onclick="initiateBooking(${machinery.id})">Reservar Ahora</button>` 
-                    : '<p class="alert alert-info">Debes iniciar sesión para reservar</p>'}
-                <button class="btn btn-secondary" onclick="this.closest('div[style*=fixed]').remove()">Cerrar</button>
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <h3>${machinery.title}</h3>
+                <button class="modal-close" onclick="document.getElementById('machineryDetailModal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <img src="${imgUrl}" alt="${machinery.title}" style="width:100%;height:220px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
+                     onerror="this.src='https://via.placeholder.com/600x220?text=Sin+Imagen'">
+
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+                    <span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span>
+                    ${machinery.brand ? `<span class="badge badge-secondary">${machinery.brand} ${machinery.model || ''}</span>` : ''}
+                    ${machinery.year ? `<span class="badge badge-secondary">${machinery.year}</span>` : ''}
+                    ${machinery.is_available
+                        ? '<span class="badge badge-success">Disponible</span>'
+                        : '<span class="badge badge-warning">No disponible</span>'}
+                </div>
+
+                <p style="color:var(--gray-700);margin-bottom:1rem;">${machinery.description}</p>
+
+                <div class="detail-info-grid">
+                    <div><span class="detail-label">Ubicación</span><span>📍 ${machinery.location_city}, ${machinery.location_province}</span></div>
+                    <div><span class="detail-label">Precio diario</span><span><strong>${formatPrice(machinery.daily_rate)}</strong></span></div>
+                    ${machinery.weekly_rate ? `<div><span class="detail-label">Precio semanal</span><span>${formatPrice(machinery.weekly_rate)}</span></div>` : ''}
+                    ${machinery.monthly_rate ? `<div><span class="detail-label">Precio mensual</span><span>${formatPrice(machinery.monthly_rate)}</span></div>` : ''}
+                    <div><span class="detail-label">Depósito</span><span>${formatPrice(machinery.deposit)}</span></div>
+                    <div><span class="detail-label">Entrega</span><span>${machinery.delivery_available ? '✅ Disponible' : '❌ No disponible'}</span></div>
+                </div>
+
+                <!-- Verificar disponibilidad -->
+                <div class="availability-section" id="availSection_${machinery.id}">
+                    <h4 style="margin-bottom:0.75rem;">Verificar Disponibilidad</h4>
+                    <div class="avail-date-row">
+                        <div class="form-group" style="flex:1;margin:0;">
+                            <label style="font-size:0.85rem;">Fecha inicio</label>
+                            <input type="date" class="form-control" id="availStart_${machinery.id}">
+                        </div>
+                        <div class="form-group" style="flex:1;margin:0;">
+                            <label style="font-size:0.85rem;">Fecha fin</label>
+                            <input type="date" class="form-control" id="availEnd_${machinery.id}">
+                        </div>
+                        <button class="btn btn-secondary" style="align-self:flex-end;" onclick="checkAvailability(${machinery.id})">Consultar</button>
+                    </div>
+                    <div id="availResult_${machinery.id}" style="margin-top:0.75rem;"></div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;">
+                    ${appState.isAuthenticated
+                        ? `<button class="btn btn-primary" onclick="initiateBooking(${machinery.id}); document.getElementById('machineryDetailModal').remove();">📅 Reservar Ahora</button>`
+                        : '<p class="alert alert-info" style="margin:0;">Debes iniciar sesión para reservar</p>'}
+                    <button class="btn btn-secondary" onclick="document.getElementById('machineryDetailModal').remove()">Cerrar</button>
+                </div>
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    const startEl = document.getElementById(`availStart_${machinery.id}`);
+    const endEl = document.getElementById(`availEnd_${machinery.id}`);
+    if (startEl) { startEl.min = today; startEl.value = today; }
+    if (endEl) {
+        const next30 = new Date();
+        next30.setDate(next30.getDate() + 30);
+        endEl.min = today;
+        endEl.value = next30.toISOString().split('T')[0];
+    }
+}
+
+/**
+ * Consulta la disponibilidad de una máquina en un rango y muestra un mini calendario
+ */
+async function checkAvailability(machineryId) {
+    const startEl = document.getElementById(`availStart_${machineryId}`);
+    const endEl = document.getElementById(`availEnd_${machineryId}`);
+    const resultEl = document.getElementById(`availResult_${machineryId}`);
+
+    if (!startEl || !endEl || !resultEl) return;
+    const start = startEl.value;
+    const end = endEl.value;
+
+    if (!start || !end || end < start) {
+        resultEl.innerHTML = '<p style="color:var(--danger-color);">Selecciona un rango de fechas válido.</p>';
+        return;
+    }
+
+    resultEl.innerHTML = '<div class="spinner-sm"></div>';
+
+    try {
+        const data = await apiRequest(`/machinery/${machineryId}/availability?start_date=${start}&end_date=${end}`);
+        resultEl.innerHTML = renderAvailabilityCalendar(data.availability, start, end);
+    } catch (e) {
+        resultEl.innerHTML = '<p style="color:var(--danger-color);">Error al consultar disponibilidad.</p>';
+    }
+}
+
+/**
+ * Renderiza un mini calendario de disponibilidad
+ */
+function renderAvailabilityCalendar(availability, start, end) {
+    const dates = Object.keys(availability).sort();
+    if (dates.length === 0) return '<p>Sin datos de disponibilidad.</p>';
+
+    const counts = { available: 0, booked: 0, maintenance: 0 };
+    dates.forEach(d => counts[availability[d]]++);
+
+    const cells = dates.map(d => {
+        const status = availability[d];
+        const cls = status === 'available' ? 'avail-day-ok' : status === 'booked' ? 'avail-day-booked' : 'avail-day-maint';
+        const label = d.split('-').slice(1).join('/'); // MM/DD
+        return `<div class="avail-day ${cls}" title="${d}: ${status === 'available' ? 'Disponible' : status === 'booked' ? 'Reservado' : 'Mantenimiento'}">${parseInt(d.split('-')[2])}</div>`;
+    }).join('');
+
+    const allAvailable = counts.booked === 0 && counts.maintenance === 0;
+
+    return `
+        <div class="avail-calendar-wrap">
+            <div class="avail-days-grid">${cells}</div>
+            <div class="avail-legend">
+                <span class="avail-dot avail-ok"></span> Disponible (${counts.available})
+                <span class="avail-dot avail-booked" style="margin-left:0.75rem;"></span> Reservado (${counts.booked})
+                <span class="avail-dot avail-maint" style="margin-left:0.75rem;"></span> Mantenimiento (${counts.maintenance})
+            </div>
+            ${allAvailable
+                ? '<p style="color:var(--success-color);font-weight:600;margin-top:0.5rem;">✅ Todas las fechas seleccionadas están disponibles</p>'
+                : '<p style="color:var(--warning-color);margin-top:0.5rem;">⚠️ Algunas fechas no están disponibles en el rango seleccionado</p>'}
+        </div>
+    `;
 }
 
 /**

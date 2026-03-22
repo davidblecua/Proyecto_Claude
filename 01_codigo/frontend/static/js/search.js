@@ -43,76 +43,299 @@ async function searchMachinery(event) {
 }
 
 /**
- * Muestra la maquinaria del usuario actual
+ * Muestra la maquinaria del usuario actual con gestión completa
  */
 async function showMyMachinery() {
     if (!appState.isAuthenticated) {
         showLogin();
         return;
     }
-    
+
     const mainContent = document.getElementById('mainContent');
     mainContent.innerHTML = `
         <div class="container mt-4">
-            <h2>Mis Máquinas</h2>
-            <button class="btn btn-success mb-3" onclick="showAddMachinery()">➕ Agregar Máquina</button>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                <div>
+                    <h2>Gestionar Mi Maquinaria</h2>
+                    <p style="color:var(--gray-600);margin:0;">Edita, actualiza y gestiona tu inventario</p>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn btn-secondary" onclick="showDashboard()">← Panel</button>
+                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Nueva Máquina</button>
+                </div>
+            </div>
             <div id="myMachineryGrid" class="card-grid"></div>
-            <div id="loadingMyMachinery" style="display: none;">
+            <div id="loadingMyMachinery" style="display:none;text-align:center;padding:2rem;">
                 <div class="spinner"></div>
             </div>
         </div>
     `;
-    
+
     try {
         document.getElementById('loadingMyMachinery').style.display = 'block';
-        
-        const data = await apiRequest(`/machinery?owner_id=${appState.currentUser.id}`);
-        
+        const data = await apiRequest(`/machinery/my/machinery`);
         const grid = document.getElementById('myMachineryGrid');
-        
+
         if (data && data.length > 0) {
-            data.forEach(machinery => {
-                const card = createMyMachineryCard(machinery);
-                grid.appendChild(card);
-            });
+            data.forEach(machinery => grid.appendChild(createMyMachineryCard(machinery)));
         } else {
-            grid.innerHTML = '<p class="text-center">No has publicado ninguna máquina aún.</p>';
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:3rem;">
+                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
+                    <h3>No has publicado ninguna máquina aún</h3>
+                    <p style="color:var(--gray-600);margin-bottom:1rem;">Empieza añadiendo tu primera máquina al catálogo</p>
+                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Publicar Primera Máquina</button>
+                </div>`;
         }
     } catch (error) {
         showAlert('Error al cargar tus máquinas', 'danger');
     } finally {
-        document.getElementById('loadingMyMachinery').style.display = 'none';
+        if (document.getElementById('loadingMyMachinery'))
+            document.getElementById('loadingMyMachinery').style.display = 'none';
     }
 }
 
 /**
- * Crea una tarjeta de maquinaria propia con opciones de edición
+ * Crea una tarjeta de maquinaria propia con opciones completas
  */
 function createMyMachineryCard(machinery) {
     const card = document.createElement('div');
-    card.className = 'card';
-    
+    card.className = 'card manage-machinery-card';
+
+    const images = machinery.images && machinery.images.length > 0 ? machinery.images : [];
+    const imgUrl = images[0] || 'https://via.placeholder.com/300x180?text=Sin+Imagen';
+    const extraPhotos = images.length > 1 ? `<span class="photo-count">+${images.length - 1} fotos</span>` : '';
+    const availBadge = machinery.is_available
+        ? '<span class="badge badge-success">Disponible</span>'
+        : '<span class="badge badge-warning">No disponible</span>';
+
     card.innerHTML = `
+        <div class="manage-card-img-wrap">
+            <img src="${imgUrl}" alt="${machinery.title}" class="manage-card-img"
+                 onerror="this.src='https://via.placeholder.com/300x180?text=Sin+Imagen'">
+            ${extraPhotos}
+            <div class="manage-card-status">${availBadge}</div>
+        </div>
         <div class="card-body">
-            <h3 class="card-title">${machinery.title}</h3>
-            <p class="card-text">
-                <span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span>
-                ${machinery.is_available 
-                    ? '<span class="badge badge-success">Disponible</span>' 
-                    : '<span class="badge badge-warning">No disponible</span>'}
-            </p>
-            <p class="card-text">${machinery.location_city}, ${machinery.location_province}</p>
-            <p class="card-text"><strong>${formatPrice(machinery.daily_rate)}/día</strong></p>
-            <div class="mt-2">
-                <button class="btn btn-primary" onclick="toggleAvailability(${machinery.id}, ${!machinery.is_available})">
-                    ${machinery.is_available ? '❌ Marcar no disponible' : '✅ Marcar disponible'}
-                </button>
-                <button class="btn btn-danger" onclick="deleteMachinery(${machinery.id})">🗑️ Eliminar</button>
+            <h4 class="card-title">${machinery.title}</h4>
+            <p style="margin:0.25rem 0;"><span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span></p>
+            <p style="font-size:0.85rem;color:var(--gray-600);margin:0.25rem 0;">📍 ${machinery.location_city}, ${machinery.location_province}</p>
+            <p style="font-weight:600;margin:0.5rem 0;">${formatPrice(machinery.daily_rate)}/día</p>
+            <div class="manage-card-actions">
+                <button class="btn btn-primary btn-sm" onclick="showEditMachineryModal(${machinery.id})">✏️ Editar</button>
+                <button class="btn btn-secondary btn-sm" onclick="showBlockDatesModal(${machinery.id}, '${machinery.title.replace(/'/g, "\\'")}')">📅 Bloquear Fechas</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteMachinery(${machinery.id})">🗑️</button>
             </div>
         </div>
     `;
-    
     return card;
+}
+
+/**
+ * Abre el modal para editar una máquina
+ */
+async function showEditMachineryModal(machineryId) {
+    let machinery;
+    try {
+        machinery = await apiRequest(`/machinery/${machineryId}`);
+    } catch (e) {
+        showAlert('Error al cargar la máquina', 'danger');
+        return;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'editMachineryModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <h3>Editar Maquinaria</h3>
+                <button class="modal-close" onclick="document.getElementById('editMachineryModal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="editMachineryForm" onsubmit="handleEditMachinery(event, ${machineryId})">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Título</label>
+                            <input type="text" class="form-control" id="editTitle" value="${escHtml(machinery.title)}" required minlength="5">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select class="form-control" id="editType" required>
+                                ${buildMachineryTypeOptions(machinery.machinery_type)}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea class="form-control" id="editDescription" rows="3" required minlength="20">${escHtml(machinery.description)}</textarea>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Marca</label>
+                            <input type="text" class="form-control" id="editBrand" value="${escHtml(machinery.brand || '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Modelo</label>
+                            <input type="text" class="form-control" id="editModel" value="${escHtml(machinery.model || '')}">
+                        </div>
+                        <div class="form-group">
+                            <label>Año</label>
+                            <input type="number" class="form-control" id="editYear" value="${machinery.year || ''}" min="1990" max="2030">
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label>Precio diario (€)</label>
+                            <input type="number" class="form-control" id="editDailyRate" value="${machinery.daily_rate}" required step="0.01" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Ciudad</label>
+                            <input type="text" class="form-control" id="editCity" value="${escHtml(machinery.location_city)}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Provincia</label>
+                            <input type="text" class="form-control" id="editProvince" value="${escHtml(machinery.location_province)}" required>
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label><input type="checkbox" id="editAvailable" ${machinery.is_available ? 'checked' : ''}> Disponible para alquiler</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="editDelivery" ${machinery.delivery_available ? 'checked' : ''}> Entrega disponible</label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('editMachineryModal').remove()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function handleEditMachinery(event, machineryId) {
+    event.preventDefault();
+    const data = {
+        title: document.getElementById('editTitle').value,
+        description: document.getElementById('editDescription').value,
+        daily_rate: parseFloat(document.getElementById('editDailyRate').value),
+        location_city: document.getElementById('editCity').value,
+        location_province: document.getElementById('editProvince').value,
+        is_available: document.getElementById('editAvailable').checked,
+        delivery_available: document.getElementById('editDelivery').checked
+    };
+    try {
+        await apiRequest(`/machinery/${machineryId}`, { method: 'PUT', body: JSON.stringify(data) });
+        document.getElementById('editMachineryModal').remove();
+        showAlert('Máquina actualizada correctamente', 'success');
+        showMyMachinery();
+    } catch (e) {
+        showAlert('Error al actualizar: ' + e.message, 'danger');
+    }
+}
+
+/**
+ * Abre el modal para bloquear fechas de una máquina
+ */
+function showBlockDatesModal(machineryId, machineryTitle) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'blockDatesModal';
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3>Bloquear Fechas</h3>
+                <button class="modal-close" onclick="document.getElementById('blockDatesModal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--gray-600);margin-bottom:1rem;">${escHtml(machineryTitle)}</p>
+                <form id="blockDatesForm" onsubmit="handleBlockDates(event, ${machineryId})">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Fecha inicio</label>
+                            <input type="date" class="form-control" id="blockStart" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha fin</label>
+                            <input type="date" class="form-control" id="blockEnd" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Razón</label>
+                        <select class="form-control" id="blockReason">
+                            <option value="maintenance">🔧 Mantenimiento</option>
+                            <option value="booked">📋 Reservado externamente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas (opcional)</label>
+                        <input type="text" class="form-control" id="blockNotes" placeholder="Ej: Revisión anual">
+                    </div>
+                    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('blockDatesModal').remove()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Bloquear Fechas</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('blockStart').min = today;
+    document.getElementById('blockEnd').min = today;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function handleBlockDates(event, machineryId) {
+    event.preventDefault();
+    const start = document.getElementById('blockStart').value;
+    const end = document.getElementById('blockEnd').value;
+    const reason = document.getElementById('blockReason').value;
+    const notes = document.getElementById('blockNotes').value;
+
+    if (end < start) {
+        showAlert('La fecha de fin debe ser posterior a la de inicio', 'danger');
+        return;
+    }
+    try {
+        await apiRequest(`/machinery/${machineryId}/blocks`, {
+            method: 'POST',
+            body: JSON.stringify({ start_date: start, end_date: end, reason, notes: notes || null })
+        });
+        document.getElementById('blockDatesModal').remove();
+        showAlert('Fechas bloqueadas correctamente', 'success');
+    } catch (e) {
+        showAlert('Error al bloquear fechas: ' + e.message, 'danger');
+    }
+}
+
+// Helpers
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function buildMachineryTypeOptions(selected) {
+    const types = [
+        ['excavadora','Excavadora'],['retroexcavadora','Retroexcavadora'],
+        ['dumper','Dumper'],['pala_cargadora','Pala Cargadora'],
+        ['hormigonera','Hormigonera'],['camion_grua','Camión Grúa'],
+        ['grua_torre','Grúa Torre'],['manipulador_telescopico','Manipulador Telescópico'],
+        ['plataforma_elevadora','Plataforma Elevadora'],['carretilla_elevadora','Carretilla Elevadora'],
+        ['compactadora','Compactadora'],['bulldozer','Bulldozer'],
+        ['martillo_hidraulico','Martillo Hidráulico'],['generador','Generador'],
+        ['compresor','Compresor'],['andamio','Andamio'],
+        ['montacargas','Montacargas'],['bomba_hormigon','Bomba de Hormigón']
+    ];
+    return types.map(([val, label]) =>
+        `<option value="${val}" ${val === selected ? 'selected' : ''}>${label}</option>`
+    ).join('');
 }
 
 /**

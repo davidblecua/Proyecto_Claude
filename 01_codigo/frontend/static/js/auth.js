@@ -161,59 +161,140 @@ async function handleRegister(event) {
 }
 
 /**
- * Muestra el dashboard del usuario
+ * Muestra el dashboard del usuario con KPIs
  */
 async function showDashboard() {
     if (!appState.isAuthenticated) {
         showLogin();
         return;
     }
-    
+
     const user = appState.currentUser;
     const mainContent = document.getElementById('mainContent');
-    
+    const isPublisher = user.role !== 'consumer';
+
     mainContent.innerHTML = `
         <div class="container mt-4">
-            <h1>Bienvenido, ${user.full_name}</h1>
-            <p><strong>Rol:</strong> ${translateRole(user.role)}</p>
-            <p><strong>Email:</strong> ${user.email}</p>
-            
-            <div class="card-grid mt-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h3>👤 Mi Perfil</h3>
-                        <p>Ver y editar información personal</p>
-                        <button class="btn btn-primary" onclick="showProfile()">Ver Perfil</button>
-                    </div>
+            <div class="dashboard-welcome">
+                <div class="avatar-wrapper-sm" onclick="showProfile()" title="Ver perfil" style="cursor:pointer;">
+                    <img src="${getUserAvatar()}" alt="Perfil" class="avatar-nav" style="width:48px;height:48px;">
                 </div>
-                
-                ${user.role !== 'consumer' ? `
-                <div class="card">
-                    <div class="card-body">
-                        <h3>🏗️ Mis Máquinas</h3>
-                        <p>Gestionar maquinaria publicada</p>
-                        <button class="btn btn-primary" onclick="showMyMachinery()">Ver Máquinas</button>
-                    </div>
+                <div>
+                    <h1 style="margin:0;">Bienvenido, ${user.full_name.split(' ')[0]}</h1>
+                    <span class="role-badge">${translateRole(user.role)}</span>
                 </div>
-                <div class="card">
-                    <div class="card-body">
-                        <h3>➕ Publicar Máquina</h3>
-                        <p>Agregar nueva maquinaria</p>
-                        <button class="btn btn-success" onclick="showAddMachinery()">Publicar</button>
-                    </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid" id="kpiGrid">
+                <div class="kpi-card kpi-loading">Cargando estadísticas...</div>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="dashboard-section">
+                <h3>Acciones Rápidas</h3>
+                <div class="quick-actions">
+                    <button class="btn btn-primary" onclick="showProfile()">👤 Mi Perfil</button>
+                    <button class="btn btn-primary" onclick="showMyBookings()">📅 Mis Reservas</button>
+                    ${isPublisher ? `
+                    <button class="btn btn-success" onclick="showMyMachinery()">🏗️ Gestionar Máquinas</button>
+                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Publicar Máquina</button>
+                    ` : ''}
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">🔍 Buscar Maquinaria</button>
                 </div>
-                ` : ''}
-                
-                <div class="card">
-                    <div class="card-body">
-                        <h3>📅 Mis Reservas</h3>
-                        <p>Ver historial de reservas</p>
-                        <button class="btn btn-primary" onclick="showMyBookings()">Ver Reservas</button>
-                    </div>
+            </div>
+
+            <!-- Últimas reservas -->
+            <div class="dashboard-section">
+                <h3>${isPublisher ? 'Últimas Reservas Recibidas' : 'Mis Últimas Reservas'}</h3>
+                <div id="recentBookingsList">
+                    <div class="spinner-sm"></div>
                 </div>
             </div>
         </div>
     `;
+
+    // Cargar stats desde la API
+    try {
+        const stats = await apiRequest('/dashboard/stats');
+        renderDashboardKPIs(stats, isPublisher);
+        renderRecentBookings(stats.recent_bookings, isPublisher);
+    } catch (e) {
+        document.getElementById('kpiGrid').innerHTML = '<p class="text-center">No se pudieron cargar las estadísticas.</p>';
+        document.getElementById('recentBookingsList').innerHTML = '';
+    }
+}
+
+function renderDashboardKPIs(stats, isPublisher) {
+    const grid = document.getElementById('kpiGrid');
+    if (isPublisher) {
+        grid.innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-icon">🏗️</div>
+                <div class="kpi-value">${stats.total_machinery}</div>
+                <div class="kpi-label">Máquinas Publicadas</div>
+            </div>
+            <div class="kpi-card kpi-green">
+                <div class="kpi-icon">✅</div>
+                <div class="kpi-value">${stats.active_bookings}</div>
+                <div class="kpi-label">Reservas Activas</div>
+            </div>
+            <div class="kpi-card kpi-orange">
+                <div class="kpi-icon">⏳</div>
+                <div class="kpi-value">${stats.pending_bookings}</div>
+                <div class="kpi-label">Reservas Pendientes</div>
+            </div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-icon">💶</div>
+                <div class="kpi-value">${formatPrice(stats.monthly_revenue)}</div>
+                <div class="kpi-label">Ingresos este mes</div>
+            </div>
+        `;
+    } else {
+        grid.innerHTML = `
+            <div class="kpi-card kpi-green">
+                <div class="kpi-icon">✅</div>
+                <div class="kpi-value">${stats.active_bookings}</div>
+                <div class="kpi-label">Reservas Activas</div>
+            </div>
+            <div class="kpi-card kpi-orange">
+                <div class="kpi-icon">⏳</div>
+                <div class="kpi-value">${stats.pending_bookings}</div>
+                <div class="kpi-label">Reservas Pendientes</div>
+            </div>
+            <div class="kpi-card kpi-blue">
+                <div class="kpi-icon">🏁</div>
+                <div class="kpi-value">${stats.completed_bookings}</div>
+                <div class="kpi-label">Completadas</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon">💶</div>
+                <div class="kpi-value">${formatPrice(stats.total_spent)}</div>
+                <div class="kpi-label">Total gastado</div>
+            </div>
+        `;
+    }
+}
+
+function renderRecentBookings(bookings, isPublisher) {
+    const container = document.getElementById('recentBookingsList');
+    if (!bookings || bookings.length === 0) {
+        container.innerHTML = '<p class="text-center" style="color:var(--gray-600);">No hay reservas recientes.</p>';
+        return;
+    }
+    container.innerHTML = bookings.map(b => `
+        <div class="recent-booking-row">
+            <div class="recent-booking-info">
+                <strong>${b.machinery_title}</strong>
+                ${isPublisher ? `<span style="color:var(--gray-600);font-size:0.85rem;"> · ${b.requester_name || ''}</span>` : ''}
+                <div style="font-size:0.82rem;color:var(--gray-500);">${b.start_date ? b.start_date.split('T')[0] : ''} — ${b.end_date ? b.end_date.split('T')[0] : ''}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                ${getStatusBadge(b.status)}
+                <strong>${formatPrice(b.total_cost)}</strong>
+            </div>
+        </div>
+    `).join('');
 }
 
 /**

@@ -129,3 +129,33 @@ class MachineryListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class MachineryBlockCreate(BaseModel):
+    """Schema para crear bloqueo de fechas"""
+    start_date: str = Field(..., description="Fecha inicio YYYY-MM-DD")
+    end_date: str = Field(..., description="Fecha fin YYYY-MM-DD")
+    reason: str = Field(default="maintenance", pattern="^(maintenance|booked)$")
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+class MachineryBlockResponse(BaseModel):
+    """Schema de respuesta de bloqueo"""
+    id: int
+    machinery_id: int
+    start_date: datetime
+    end_date: datetime
+    reason: str
+    notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AvailabilityResponse(BaseModel):
+    """Schema de disponibilidad por fechas"""
+    machinery_id: int
+    start_date: str
+    end_date: str
+    availability: dict  # {date_str: 'available' | 'booked' | 'maintenance'}

@@ -107,9 +107,39 @@ class Machinery(Base):
     # Relaciones
     owner = relationship("User", back_populates="machinery")
     bookings = relationship("Booking", back_populates="machinery", cascade="all, delete-orphan")
+    blocks = relationship("MachineryBlock", back_populates="machinery", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Machinery(id={self.id}, title={self.title}, type={self.machinery_type})>"
+
+
+class MachineryBlockReason(str, Enum):
+    """Razón de bloqueo de fechas"""
+    MAINTENANCE = "maintenance"
+    BOOKED = "booked"
+
+
+class MachineryBlock(Base):
+    """
+    Bloqueos de fechas para maquinaria
+
+    Permite al propietario marcar rangos de fechas como no disponibles
+    (mantenimiento o reservado externamente)
+    """
+    __tablename__ = "machinery_blocks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    machinery_id = Column(Integer, ForeignKey("machinery.id"), nullable=False, index=True)
+    start_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
+    reason = Column(SQLEnum(MachineryBlockReason), default=MachineryBlockReason.MAINTENANCE, nullable=False)
+    notes = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    machinery = relationship("Machinery", back_populates="blocks")
+
+    def __repr__(self):
+        return f"<MachineryBlock(id={self.id}, machinery_id={self.machinery_id}, reason={self.reason})>"
     
     def to_dict(self):
         """Convierte el modelo a diccionario"""

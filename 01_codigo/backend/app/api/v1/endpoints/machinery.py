@@ -8,8 +8,11 @@ from typing import List, Optional
 from app.db.database import get_db
 from app.schemas.machinery import (
     MachineryResponse, MachineryCreate, MachineryUpdate,
-    MachinerySearch, MachineryListResponse
+    MachinerySearch, MachineryListResponse,
+    MachineryBlockCreate, MachineryBlockResponse, AvailabilityResponse
 )
+from app.models.machinery import MachineryBlockReason
+from datetime import date
 from app.services.machinery_service import MachineryService
 from app.core.dependencies import get_current_user, require_publisher
 from app.models.user import User
@@ -179,7 +182,70 @@ def get_my_machinery(
     current_user: User = Depends(require_publisher),
     db: Session = Depends(get_db)
 ):
-    """
-    Obtiene la maquinaria del usuario actual
-    """
+    """Obtiene la maquinaria del usuario actual"""
     return MachineryService.get_machinery_list(db, skip, limit, owner_id=current_user.id)
+
+
+@router.get("/{machinery_id}/availability", response_model=AvailabilityResponse)
+def get_machinery_availability(
+    machinery_id: int,
+    start_date: date = Query(..., description="Fecha inicio YYYY-MM-DD"),
+    end_date: date = Query(..., description="Fecha fin YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    """
+    Devuelve la disponibilidad día a día de una máquina en un rango de fechas.
+    No requiere autenticación.
+    """
+    if end_date < start_date:
+        raise HTTPException(status_code=400, detail="end_date debe ser >= start_date")
+    availability = MachineryService.get_availability(db, machinery_id, start_date, end_date)
+    return {
+        "machinery_id": machinery_id,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "availability": availability
+    }
+
+
+@router.get("/{machinery_id}/blocks", response_model=List[MachineryBlockResponse])
+def get_machinery_blocks(
+    machinery_id: int,
+    current_user: User = Depends(require_publisher),
+    db: Session = Depends(get_db)
+):
+    """Obtiene los bloqueos de fechas de una máquina (solo propietario)"""
+    return MachineryService.get_blocks(db, machinery_id, current_user.id)
+
+
+@router.post("/{machinery_id}/blocks", response_model=MachineryBlockResponse, status_code=201)
+def create_machinery_block(
+    machinery_id: int,
+    block_data: MachineryBlockCreate,
+    current_user: User = Depends(require_publisher),
+    db: Session = Depends(get_db)
+):
+    """Crea un bloqueo de fechas para una máquina (solo propietario)"""
+    try:
+        start = date.fromisoformat(block_data.start_date)
+        end = date.fromisoformat(block_data.end_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido. Usa YYYY-MM-DD")
+
+    if end < start:
+        raise HTTPException(status_code=400, detail="end_date debe ser >= start_date")
+
+    reason = MachineryBlockReason(block_data.reason)
+    return MachineryService.create_block(db, machinery_id, start, end, reason, current_user.id, block_data.notes)
+
+
+@router.delete("/{machinery_id}/blocks/{block_id}")
+def delete_machinery_block(
+    machinery_id: int,
+    block_id: int,
+    current_user: User = Depends(require_publisher),
+    db: Session = Depends(get_db)
+):
+    """Elimina un bloqueo de fechas (solo propietario)"""
+    MachineryService.delete_block(db, block_id, current_user.id)
+    return {"message": "Bloqueo eliminado correctamente"}
