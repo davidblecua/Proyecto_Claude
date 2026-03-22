@@ -14,7 +14,7 @@ from app.schemas.machinery import (
 from app.models.machinery import MachineryBlockReason
 from datetime import date
 from app.services.machinery_service import MachineryService
-from app.core.dependencies import get_current_user, require_publisher
+from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.machinery import MachineryType
 from math import ceil
@@ -127,7 +127,7 @@ def list_machinery(
 @router.post("", response_model=MachineryResponse, status_code=status.HTTP_201_CREATED)
 def create_machinery(
     machinery_data: MachineryCreate,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -140,7 +140,7 @@ def create_machinery(
 def update_machinery(
     machinery_id: int,
     machinery_data: MachineryUpdate,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -152,7 +152,7 @@ def update_machinery(
 @router.delete("/{machinery_id}")
 def delete_machinery(
     machinery_id: int,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -166,7 +166,7 @@ def delete_machinery(
 def toggle_machinery_availability(
     machinery_id: int,
     is_available: bool,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -179,7 +179,7 @@ def toggle_machinery_availability(
 def get_my_machinery(
     skip: int = 0,
     limit: int = 20,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obtiene la maquinaria del usuario actual"""
@@ -211,7 +211,7 @@ def get_machinery_availability(
 @router.get("/{machinery_id}/blocks", response_model=List[MachineryBlockResponse])
 def get_machinery_blocks(
     machinery_id: int,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Obtiene los bloqueos de fechas de una máquina (solo propietario)"""
@@ -222,7 +222,7 @@ def get_machinery_blocks(
 def create_machinery_block(
     machinery_id: int,
     block_data: MachineryBlockCreate,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Crea un bloqueo de fechas para una máquina (solo propietario)"""
@@ -243,7 +243,7 @@ def create_machinery_block(
 def delete_machinery_block(
     machinery_id: int,
     block_id: int,
-    current_user: User = Depends(require_publisher),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Elimina un bloqueo de fechas (solo propietario)"""
