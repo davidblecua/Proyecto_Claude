@@ -29,7 +29,11 @@ async function searchMachinery(event) {
         const data = await apiRequest(`/machinery/search?${params.toString()}`);
         
         if (data.machinery && data.machinery.length > 0) {
+            currentMachineryList = data.machinery;
+            activeTypeFilter = '';
+            dateFilterActive = false;
             renderMachinery(data.machinery);
+            renderFilterBar();
             showAlert(`Se encontraron ${data.total} resultados`, 'success');
         } else {
             grid.innerHTML = '<p class="text-center">No se encontró maquinaria con estos filtros.</p>';

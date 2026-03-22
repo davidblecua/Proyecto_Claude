@@ -245,6 +245,8 @@ function translateMachineryType(type) {
 
 // Lista actual de maquinaria (compartida con map.js para el toggle de vista)
 let currentMachineryList = [];
+let activeTypeFilter = '';
+let dateFilterActive = false;
 
 /**
  * Carga la maquinaria inicial y activa los botones de vista lista/mapa
@@ -289,7 +291,10 @@ async function loadInitialMachinery() {
 
         if (data.machinery && data.machinery.length > 0) {
             currentMachineryList = data.machinery;
+            activeTypeFilter = '';
+            dateFilterActive = false;
             renderMachinery(data.machinery);
+            renderFilterBar();
             // Mostrar botones de vista lista/mapa
             const toggleBtns = document.getElementById('viewToggleButtons');
             if (toggleBtns) toggleBtns.style.display = 'flex';
@@ -538,6 +543,191 @@ function renderAvailabilityCalendar(availability, start, end) {
  */
 function scrollToSearch() {
     document.getElementById('searchBox').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== FILTER BAR (tipo + disponibilidad por fechas) =====
+
+const MACHINERY_TYPES = [
+    ['', 'Todas'],
+    ['excavadora', 'Excavadora'],
+    ['retroexcavadora', 'Retroexcavadora'],
+    ['dumper', 'Dumper'],
+    ['pala_cargadora', 'Pala Cargadora'],
+    ['hormigonera', 'Hormigonera'],
+    ['camion_grua', 'Camión Grua'],
+    ['grua_torre', 'Grua Torre'],
+    ['manipulador_telescopico', 'Manipulador Telescopico'],
+    ['plataforma_elevadora', 'Plataforma Elevadora'],
+    ['carretilla_elevadora', 'Carretilla Elevadora'],
+    ['compactadora', 'Compactadora'],
+    ['bulldozer', 'Bulldozer'],
+    ['martillo_hidraulico', 'Martillo Hidraulico'],
+    ['generador', 'Generador'],
+    ['compresor', 'Compresor'],
+];
+
+function renderFilterBar() {
+    const existing = document.getElementById('publicFilterBar');
+    if (existing) existing.remove();
+
+    const machineryResults = document.getElementById('machineryResults');
+    const grid = document.getElementById('machineryGrid');
+    if (!machineryResults || !grid) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const next14 = new Date();
+    next14.setDate(next14.getDate() + 14);
+    const next14str = next14.toISOString().split('T')[0];
+
+    const chipsHtml = MACHINERY_TYPES.map(([val, label]) =>
+        `<button class="chip ${val === activeTypeFilter ? 'chip-active' : ''}"
+                 data-type="${val}"
+                 onclick="applyTypeFilter('${val}')">${label}</button>`
+    ).join('');
+
+    const bar = document.createElement('div');
+    bar.id = 'publicFilterBar';
+    bar.className = 'public-filter-bar';
+    bar.innerHTML = `
+        <div class="filter-section">
+            <span class="filter-section-label">Filtrar por tipo de maquina</span>
+            <div class="filter-chips" id="typeFilterChips">${chipsHtml}</div>
+        </div>
+        <div class="filter-section">
+            <span class="filter-section-label">Consultar disponibilidad por fechas</span>
+            <div class="filter-avail-row">
+                <div class="form-group" style="margin:0;flex:1;min-width:130px;">
+                    <label style="font-size:0.78rem;color:var(--gray-600);">Desde</label>
+                    <input type="date" class="form-control" id="pubFilterStart" min="${today}" value="${today}">
+                </div>
+                <div class="form-group" style="margin:0;flex:1;min-width:130px;">
+                    <label style="font-size:0.78rem;color:var(--gray-600);">Hasta</label>
+                    <input type="date" class="form-control" id="pubFilterEnd" min="${today}" value="${next14str}">
+                </div>
+                <button class="btn btn-secondary" style="align-self:flex-end;white-space:nowrap;" onclick="applyDateFilter()">
+                    Ver disponibilidad
+                </button>
+                <button class="btn btn-outline-sm" id="clearDateFilterBtn" style="align-self:flex-end;display:${dateFilterActive ? 'inline-block' : 'none'};" onclick="clearDateFilter()">
+                    Limpiar fechas
+                </button>
+            </div>
+            <div id="dateFilterStatus" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+        </div>
+    `;
+
+    // Insertar antes del grid (despues del results-header)
+    machineryResults.insertBefore(bar, grid);
+}
+
+function applyTypeFilter(type) {
+    activeTypeFilter = type;
+    dateFilterActive = false;
+
+    // Actualizar chips
+    document.querySelectorAll('#typeFilterChips .chip').forEach(btn => {
+        btn.classList.toggle('chip-active', btn.getAttribute('data-type') === type);
+    });
+
+    // Limpiar estado de fechas
+    const statusEl = document.getElementById('dateFilterStatus');
+    if (statusEl) statusEl.innerHTML = '';
+    const clearBtn = document.getElementById('clearDateFilterBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const filtered = activeTypeFilter
+        ? currentMachineryList.filter(m => m.machinery_type === activeTypeFilter)
+        : currentMachineryList;
+
+    renderMachinery(filtered);
+}
+
+async function applyDateFilter() {
+    const startEl = document.getElementById('pubFilterStart');
+    const endEl = document.getElementById('pubFilterEnd');
+    if (!startEl || !endEl) return;
+
+    const start = startEl.value;
+    const end = endEl.value;
+
+    if (!start || !end || end < start) {
+        showAlert('Selecciona un rango de fechas valido', 'danger');
+        return;
+    }
+
+    const statusEl = document.getElementById('dateFilterStatus');
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--gray-600);">Consultando disponibilidad...</span>';
+
+    const filtered = activeTypeFilter
+        ? currentMachineryList.filter(m => m.machinery_type === activeTypeFilter)
+        : currentMachineryList;
+
+    // Batch: consultar disponibilidad de todas las maquinas en paralelo
+    const results = await Promise.allSettled(
+        filtered.map(m =>
+            apiRequest(`/machinery/${m.id}/availability?start_date=${start}&end_date=${end}`)
+                .then(data => {
+                    const vals = Object.values(data.availability);
+                    const allFree = vals.length > 0 && vals.every(v => v === 'available');
+                    return { id: m.id, status: allFree ? 'available' : 'partial' };
+                })
+        )
+    );
+
+    const availMap = {};
+    results.forEach(r => {
+        if (r.status === 'fulfilled') availMap[r.value.id] = r.value.status;
+    });
+
+    dateFilterActive = true;
+    renderMachineryWithAvailability(filtered, availMap, start, end);
+
+    const availCount = Object.values(availMap).filter(v => v === 'available').length;
+    if (statusEl) {
+        statusEl.innerHTML = `
+            <span style="color:var(--success-color);font-weight:600;">
+                ${availCount} maquina${availCount !== 1 ? 's' : ''} disponible${availCount !== 1 ? 's' : ''}
+                para ${formatDateShort(start)} - ${formatDateShort(end)}
+            </span>`;
+    }
+    const clearBtn = document.getElementById('clearDateFilterBtn');
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+}
+
+function clearDateFilter() {
+    dateFilterActive = false;
+    const statusEl = document.getElementById('dateFilterStatus');
+    if (statusEl) statusEl.innerHTML = '';
+    const clearBtn = document.getElementById('clearDateFilterBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    const filtered = activeTypeFilter
+        ? currentMachineryList.filter(m => m.machinery_type === activeTypeFilter)
+        : currentMachineryList;
+    renderMachinery(filtered);
+}
+
+function renderMachineryWithAvailability(machineryList, availMap, start, end) {
+    const grid = document.getElementById('machineryGrid');
+    grid.innerHTML = '';
+    machineryList.forEach(machinery => {
+        const card = createMachineryCard(machinery);
+        const avail = availMap[machinery.id];
+        if (avail !== undefined) {
+            const badge = document.createElement('div');
+            badge.style.cssText = 'padding:0 0.75rem 0.5rem;';
+            badge.innerHTML = avail === 'available'
+                ? `<span class="badge badge-success" style="font-size:0.8rem;">Libre ${formatDateShort(start)}-${formatDateShort(end)}</span>`
+                : `<span class="badge badge-warning" style="font-size:0.8rem;">Ocupado parcialmente</span>`;
+            const footer = card.querySelector('.card-footer');
+            if (footer) footer.parentNode.insertBefore(badge, footer);
+        }
+        grid.appendChild(card);
+    });
+}
+
+function formatDateShort(dateStr) {
+    const [, m, d] = dateStr.split('-');
+    return `${d}/${m}`;
 }
 
 /**
