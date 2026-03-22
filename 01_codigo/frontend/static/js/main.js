@@ -457,12 +457,22 @@ function showMachineryModal(machinery) {
                     <div id="availResult_${machinery.id}" style="margin-top:0.75rem;"></div>
                 </div>
 
-                <!-- Chat con el propietario -->
-                ${appState.isAuthenticated && appState.currentUser.id !== machinery.owner_id ? `
+                <!-- Chat con el propietario / Consultas recibidas -->
+                ${!appState.isAuthenticated ? `
+                <div class="alert alert-info" style="margin-top:1rem;margin-bottom:0;">
+                    <a href="#" onclick="closeMachineryModal();showLogin()">Inicia sesion</a> para contactar al propietario
+                </div>` : appState.currentUser.id === machinery.owner_id ? `
+                <div class="chat-section" id="chatSection_${machinery.id}">
+                    <div class="chat-header">
+                        <span>Consultas recibidas sobre esta maquina</span>
+                    </div>
+                    <div id="ownerInquiries_${machinery.id}" style="padding:0.75rem;max-height:220px;overflow-y:auto;">
+                        <div style="text-align:center;color:var(--gray-500);font-size:0.85rem;">Cargando...</div>
+                    </div>
+                </div>` : `
                 <div class="chat-section" id="chatSection_${machinery.id}">
                     <div class="chat-header">
                         <span>Contactar al propietario</span>
-                        <span class="chat-status" id="chatStatus_${machinery.id}"></span>
                     </div>
                     <div class="chat-messages" id="chatMessages_${machinery.id}">
                         <div style="text-align:center;padding:1rem;color:var(--gray-500);font-size:0.85rem;">Cargando mensajes...</div>
@@ -473,9 +483,6 @@ function showMachineryModal(machinery) {
                                onkeydown="if(event.key==='Enter')sendChatMessage(${machinery.id},${machinery.owner_id})">
                         <button class="btn btn-primary btn-sm" onclick="sendChatMessage(${machinery.id},${machinery.owner_id})">Enviar</button>
                     </div>
-                </div>` : appState.isAuthenticated ? '' : `
-                <div class="alert alert-info" style="margin-top:1rem;margin-bottom:0;">
-                    <a href="#" onclick="document.getElementById('machineryDetailModal').remove();showLogin()">Inicia sesion</a> para contactar al propietario
                 </div>`}
 
                 <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;">
@@ -491,9 +498,13 @@ function showMachineryModal(machinery) {
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) closeMachineryModal(); });
 
-    // Iniciar chat si el usuario esta autenticado y no es el propietario
-    if (appState.isAuthenticated && appState.currentUser.id !== machinery.owner_id) {
-        startChatPolling(machinery.id, machinery.owner_id);
+    // Iniciar chat segun rol
+    if (appState.isAuthenticated) {
+        if (appState.currentUser.id === machinery.owner_id) {
+            loadOwnerInquiries(machinery.id);
+        } else {
+            startChatPolling(machinery.id, machinery.owner_id);
+        }
     }
 
     // Set min date to today
@@ -853,6 +864,32 @@ function stopChatPolling() {
     if (chatPollInterval) {
         clearInterval(chatPollInterval);
         chatPollInterval = null;
+    }
+}
+
+async function loadOwnerInquiries(machineryId) {
+    const container = document.getElementById(`ownerInquiries_${machineryId}`);
+    if (!container) return;
+    try {
+        const convs = await apiRequest(`/messages/machine/${machineryId}/conversations`);
+        if (!convs || convs.length === 0) {
+            container.innerHTML = '<p style="text-align:center;color:var(--gray-500);font-size:0.85rem;padding:0.5rem;">Nadie ha enviado consultas sobre esta maquina todavia.</p>';
+            return;
+        }
+        container.innerHTML = convs.map(c => `
+            <div class="inbox-row" style="margin-bottom:0.4rem;padding:0.6rem 0.8rem;"
+                 onclick="closeMachineryModal();openConversationFromInbox(${c.machinery_id},${c.other_user_id},'${escHtml2(c.other_user_name)}','${escHtml2(c.machinery_title)}')">
+                <div class="inbox-avatar" style="width:34px;height:34px;font-size:0.9rem;">${c.other_user_name.charAt(0).toUpperCase()}</div>
+                <div class="inbox-info">
+                    <div class="inbox-name" style="font-size:0.88rem;">${escHtml2(c.other_user_name)}
+                        ${c.unread_count > 0 ? `<span class="inbox-unread-badge">${c.unread_count}</span>` : ''}
+                    </div>
+                    <div class="inbox-preview">${escHtml2(c.last_message)}</div>
+                </div>
+                <div class="inbox-time">${new Date(c.last_message_at).toLocaleDateString('es-ES')}</div>
+            </div>`).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="color:var(--danger-color);font-size:0.85rem;">Error al cargar consultas.</p>';
     }
 }
 

@@ -137,6 +137,56 @@ def get_inbox(
     return result
 
 
+@router.get("/machine/{machinery_id}/conversations", response_model=List[ConversationSummary])
+def get_machine_conversations(
+    machinery_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Conversaciones recibidas sobre una maquina (vista propietario)"""
+    machinery = db.query(Machinery).filter(Machinery.id == machinery_id).first()
+    if not machinery:
+        raise HTTPException(status_code=404, detail="Maquinaria no encontrada")
+    if machinery.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    messages = (
+        db.query(Message)
+        .filter(Message.machinery_id == machinery_id)
+        .order_by(Message.created_at.desc())
+        .all()
+    )
+
+    seen = set()
+    result = []
+    for msg in messages:
+        other_id = msg.sender_id if msg.sender_id != current_user.id else msg.receiver_id
+        if other_id == current_user.id:
+            continue
+        if other_id in seen:
+            continue
+        seen.add(other_id)
+
+        other_user = db.query(User).filter(User.id == other_id).first()
+        unread = db.query(Message).filter(
+            Message.machinery_id == machinery_id,
+            Message.sender_id == other_id,
+            Message.receiver_id == current_user.id,
+            Message.is_read == False,
+        ).count()
+
+        result.append(ConversationSummary(
+            other_user_id=other_id,
+            other_user_name=other_user.full_name or other_user.username if other_user else "Usuario",
+            machinery_id=machinery_id,
+            machinery_title=machinery.title,
+            last_message=msg.content[:120],
+            last_message_at=msg.created_at,
+            unread_count=unread,
+        ))
+    return result
+
+
 @router.get("/unread-count")
 def get_unread_count(
     db: Session = Depends(get_db),
