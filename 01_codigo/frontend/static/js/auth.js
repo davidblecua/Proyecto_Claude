@@ -13,11 +13,11 @@ function showLogin() {
             <h2>Iniciar Sesión</h2>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label for="loginEmail">Email</label>
+                    <label for="loginEmail">Email <span class="req">*</span></label>
                     <input type="email" class="form-control" id="loginEmail" required>
                 </div>
                 <div class="form-group">
-                    <label for="loginPassword">Contraseña</label>
+                    <label for="loginPassword">Contraseña <span class="req">*</span></label>
                     <input type="password" class="form-control" id="loginPassword" required>
                 </div>
                 <div class="form-group">
@@ -81,25 +81,25 @@ function showRegister() {
             <h2>Registrarse</h2>
             <form id="registerForm" onsubmit="handleRegister(event)">
                 <div class="form-group">
-                    <label for="regEmail">Email</label>
+                    <label for="regEmail">Email <span class="req">*</span></label>
                     <input type="email" class="form-control" id="regEmail" required>
                 </div>
                 <div class="form-group">
-                    <label for="regUsername">Nombre de Usuario</label>
+                    <label for="regUsername">Nombre de Usuario <span class="req">*</span></label>
                     <input type="text" class="form-control" id="regUsername" required>
                 </div>
                 <div class="form-group">
-                    <label for="regFullName">Nombre Completo</label>
+                    <label for="regFullName">Nombre Completo <span class="req">*</span></label>
                     <input type="text" class="form-control" id="regFullName" required>
                 </div>
                 <div class="form-group">
-                    <label for="regPassword">Contraseña</label>
-                    <input type="password" class="form-control" id="regPassword" required 
+                    <label for="regPassword">Contraseña <span class="req">*</span></label>
+                    <input type="password" class="form-control" id="regPassword" required
                            minlength="8" placeholder="Mín. 8 caracteres, 1 número, 1 mayúscula">
                     <small>Debe contener al menos 8 caracteres, un número y una mayúscula</small>
                 </div>
                 <div class="form-group">
-                    <label for="regRole">Tipo de Usuario</label>
+                    <label for="regRole">Tipo de Usuario <span class="req">*</span></label>
                     <select class="form-control" id="regRole" required>
                         <option value="consumer">Consumidor (Alquilar máquinas)</option>
                         <option value="publisher">Publicador (Alquilar y publicar)</option>

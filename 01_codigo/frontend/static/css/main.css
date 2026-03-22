@@ -926,6 +926,13 @@ body {
     margin: 0.5rem auto;
 }
 
+/* Campo obligatorio */
+.req {
+    color: var(--danger-color);
+    margin-left: 2px;
+    font-weight: 700;
+}
+
 /* ===== PUBLIC FILTER BAR ===== */
 .public-filter-bar {
     background: var(--white);

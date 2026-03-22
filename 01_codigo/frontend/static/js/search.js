@@ -160,18 +160,18 @@ async function showEditMachineryModal(machineryId) {
                 <form id="editMachineryForm" onsubmit="handleEditMachinery(event, ${machineryId})">
                     <div class="form-row-2">
                         <div class="form-group">
-                            <label>Título</label>
+                            <label>Título <span class="req">*</span></label>
                             <input type="text" class="form-control" id="editTitle" value="${escHtml(machinery.title)}" required minlength="5">
                         </div>
                         <div class="form-group">
-                            <label>Tipo</label>
+                            <label>Tipo <span class="req">*</span></label>
                             <select class="form-control" id="editType" required>
                                 ${buildMachineryTypeOptions(machinery.machinery_type)}
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Descripción</label>
+                        <label>Descripción <span class="req">*</span></label>
                         <textarea class="form-control" id="editDescription" rows="3" required minlength="20">${escHtml(machinery.description)}</textarea>
                     </div>
                     <div class="form-row-3">
@@ -190,15 +190,15 @@ async function showEditMachineryModal(machineryId) {
                     </div>
                     <div class="form-row-3">
                         <div class="form-group">
-                            <label>Precio diario (€)</label>
+                            <label>Precio diario (€) <span class="req">*</span></label>
                             <input type="number" class="form-control" id="editDailyRate" value="${machinery.daily_rate}" required step="0.01" min="1">
                         </div>
                         <div class="form-group">
-                            <label>Ciudad</label>
+                            <label>Ciudad <span class="req">*</span></label>
                             <input type="text" class="form-control" id="editCity" value="${escHtml(machinery.location_city)}" required>
                         </div>
                         <div class="form-group">
-                            <label>Provincia</label>
+                            <label>Provincia <span class="req">*</span></label>
                             <input type="text" class="form-control" id="editProvince" value="${escHtml(machinery.location_province)}" required>
                         </div>
                     </div>
@@ -261,16 +261,16 @@ function showBlockDatesModal(machineryId, machineryTitle) {
                 <form id="blockDatesForm" onsubmit="handleBlockDates(event, ${machineryId})">
                     <div class="form-row-2">
                         <div class="form-group">
-                            <label>Fecha inicio</label>
+                            <label>Fecha inicio <span class="req">*</span></label>
                             <input type="date" class="form-control" id="blockStart" required>
                         </div>
                         <div class="form-group">
-                            <label>Fecha fin</label>
+                            <label>Fecha fin <span class="req">*</span></label>
                             <input type="date" class="form-control" id="blockEnd" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Razón</label>
+                        <label>Razón <span class="req">*</span></label>
                         <select class="form-control" id="blockReason">
                             <option value="maintenance">🔧 Mantenimiento</option>
                             <option value="booked">📋 Reservado externamente</option>
@@ -389,17 +389,17 @@ function showAddMachinery() {
             <h2>Publicar Nueva Máquina</h2>
             <form id="addMachineryForm" onsubmit="handleAddMachinery(event)" style="max-width: 800px;">
                 <div class="form-group">
-                    <label>Título</label>
+                    <label>Título <span class="req">*</span></label>
                     <input type="text" class="form-control" id="machTitle" required>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Descripción</label>
+                    <label>Descripción <span class="req">*</span></label>
                     <textarea class="form-control" id="machDescription" rows="4" required></textarea>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Tipo de Maquinaria</label>
+                    <label>Tipo de Maquinaria <span class="req">*</span></label>
                     <select class="form-control" id="machType" required>
                         <option value="excavadora">Excavadora</option>
                         <option value="dumper">Dumper</option>
@@ -425,17 +425,17 @@ function showAddMachinery() {
                 </div>
                 
                 <div class="form-group">
-                    <label>Precio Diario (€)</label>
+                    <label>Precio Diario (€) <span class="req">*</span></label>
                     <input type="number" class="form-control" id="machDailyRate" required step="0.01">
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Ciudad</label>
+                    <label>Ciudad <span class="req">*</span></label>
                     <input type="text" class="form-control" id="machCity" required>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Provincia</label>
+                    <label>Provincia <span class="req">*</span></label>
                     <input type="text" class="form-control" id="machProvince" required>
                 </div>
                 
