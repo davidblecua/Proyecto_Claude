@@ -2,17 +2,26 @@
 Configuración central de la aplicación
 Maneja variables de entorno y configuración general
 """
+import os
 from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import PostgresDsn, validator
+
+# Selecciona el fichero .env según APP_ENV (dev | pre | pro)
+# Si APP_ENV no está definido, usa .env (desarrollo local)
+_env = os.getenv("APP_ENV", "dev")
+_env_file = f".env.{_env}" if _env in ("dev", "pre", "pro") else ".env"
 
 
 class Settings(BaseSettings):
     """
     Configuración de la aplicación usando Pydantic Settings
-    Las variables se cargan desde .env o variables de entorno
+    Las variables se cargan desde el fichero .env correspondiente al entorno.
+    Seleccionar entorno: APP_ENV=dev|pre|pro uvicorn app.main:app
     """
-    
+
+    APP_ENV: str = "dev"
+
     # Información de la aplicación
     APP_NAME: str = "RentaMaq"
     APP_VERSION: str = "0.1.0"
@@ -63,7 +72,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     class Config:
-        env_file = ".env"
+        env_file = _env_file
         case_sensitive = True
 
 

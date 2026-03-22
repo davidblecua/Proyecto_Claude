@@ -199,6 +199,8 @@ async function showDashboard() {
                     ${isPublisher ? `
                     <button class="btn btn-success" onclick="showMyMachinery()">🏗️ Gestionar Máquinas</button>
                     <button class="btn btn-success" onclick="showAddMachinery()">➕ Publicar Máquina</button>
+                    <button class="btn btn-success" onclick="showMyOperators()">👷 Mis Operarios</button>
+                    <button class="btn btn-success" onclick="showPublishOperator()">➕ Publicar Operario</button>
                     ` : ''}
                     <button class="btn btn-secondary" onclick="window.location.href='/'">🔍 Buscar Maquinaria</button>
                 </div>
@@ -208,6 +210,14 @@ async function showDashboard() {
             <div class="dashboard-section">
                 <h3>${isPublisher ? 'Últimas Reservas Recibidas' : 'Mis Últimas Reservas'}</h3>
                 <div id="recentBookingsList">
+                    <div class="spinner-sm"></div>
+                </div>
+            </div>
+
+            <!-- Reservas de operarios -->
+            <div class="dashboard-section">
+                <h3>Mis Reservas de Operarios</h3>
+                <div id="opBookingsContainer">
                     <div class="spinner-sm"></div>
                 </div>
             </div>
@@ -223,6 +233,9 @@ async function showDashboard() {
         document.getElementById('kpiGrid').innerHTML = '<p class="text-center">No se pudieron cargar las estadísticas.</p>';
         document.getElementById('recentBookingsList').innerHTML = '';
     }
+
+    // Cargar reservas de operarios (definida en operators.js)
+    if (typeof showMyOperatorBookings === 'function') showMyOperatorBookings();
 }
 
 function renderDashboardKPIs(stats, isPublisher) {

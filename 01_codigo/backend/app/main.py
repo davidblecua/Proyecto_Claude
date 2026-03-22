@@ -9,8 +9,9 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pathlib import Path
 from app.core.config import settings
-from app.api.v1.endpoints import auth, users, machinery, bookings, dashboard, messages
+from app.api.v1.endpoints import auth, users, machinery, bookings, dashboard, messages, operators
 from app.models import message as _message_model  # noqa: registrar tabla en metadata
+from app.models import operator as _operator_model  # noqa: registrar tablas en metadata
 from app.db.database import engine, Base
 
 # Crear tablas en la base de datos
@@ -66,6 +67,7 @@ app.include_router(machinery.router, prefix=settings.API_V1_PREFIX)
 app.include_router(bookings.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(messages.router, prefix=settings.API_V1_PREFIX)
+app.include_router(operators.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/", response_class=HTMLResponse)

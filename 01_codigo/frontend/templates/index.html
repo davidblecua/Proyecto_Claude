@@ -33,6 +33,7 @@
                 <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
                 <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
                 <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
+                <li><a href="#" onclick="showMyOperators()">Mis Operarios</a></li>
                 <li>
                     <a href="#" onclick="showInbox()" style="position:relative;">
                         Mensajes
@@ -100,8 +101,16 @@
             </div>
         </section>
 
-        <!-- Machinery Results -->
+        <!-- Tabs Maquinaria / Operarios -->
         <section class="container">
+            <div class="main-tabs">
+                <button class="main-tab tab-active" id="tabMachinery" onclick="showMachineryTab()">Maquinaria</button>
+                <button class="main-tab" id="tabOperators" onclick="showOperatorsTab()">Operarios</button>
+            </div>
+        </section>
+
+        <!-- Machinery Results -->
+        <section class="container" id="machinerySection">
             <div id="machineryResults">
                 <div class="results-header">
                     <h2 class="mb-3">Maquinaria Disponible</h2>
@@ -118,6 +127,15 @@
                     <p class="text-center">Cargando maquinaria...</p>
                 </div>
             </div>
+        </section>
+
+        <!-- Operators Section -->
+        <section class="container" id="operatorsSection" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+                <h2 style="margin:0;">Operarios Disponibles</h2>
+                <button class="btn btn-success" id="btnPublishOperator" onclick="showPublishOperator()" style="display:none;">+ Publicar Operario</button>
+            </div>
+            <div class="card-grid" id="operatorsGrid"></div>
         </section>
 
         <!-- Mapa siempre visible, sin necesidad de login -->
@@ -175,9 +193,10 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js?v=13"></script>
+    <script src="/static/js/main.js?v=14"></script>
     <script src="/static/js/auth.js?v=7"></script>
     <script src="/static/js/search.js?v=8"></script>
     <script src="/static/js/map.js?v=3"></script>
+    <script src="/static/js/operators.js?v=1"></script>
 </body>
 </html>

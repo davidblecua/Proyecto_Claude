@@ -110,6 +110,9 @@ function updateNavbarForAuthenticatedUser() {
             navUserName.textContent = appState.currentUser.full_name.split(' ')[0];
         }
         updateUnreadBadge();
+        // Mostrar boton de publicar operario si esta en la seccion de operarios
+        const btnPubOp = document.getElementById('btnPublishOperator');
+        if (btnPubOp) btnPubOp.style.display = '';
     } else {
         navbarMenu.style.display = 'flex';
         navbarMenuAuth.style.display = 'none';
