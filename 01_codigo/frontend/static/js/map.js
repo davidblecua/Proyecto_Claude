@@ -176,7 +176,13 @@ function setActiveMarker(id) {
 // ── Inicializa el mapa Leaflet en el div permanente de la página ─────────────
 function initMap() {
     if (leafletMap) return;
-    if (!document.getElementById('leafletMap')) return;
+    const container = document.getElementById('leafletMap');
+    if (!container) return;
+    // Evitar "Map container is already initialized" de Leaflet
+    if (container._leaflet_id) {
+        try { L.map(container).remove(); } catch (e) { /* ignorar */ }
+        container._leaflet_id = undefined;
+    }
     leafletMap = L.map('leafletMap', {
         center: [40.4168, -3.7038],
         zoom: 6,
@@ -334,6 +340,15 @@ function buildSidebarCard(m, marker, coords) {
 // ── Vuelve a la vista de lista ───────────────────────────────────────────────
 function switchToListView() {
     isMapView = false;
+
+    // Rescatar el div del mapa permanente ANTES de que loadInitialMachinery
+    // reemplace el innerHTML de machineryResults (donde showMapView lo movio)
+    const mapDiv = document.getElementById('leafletMap');
+    const permanentSection = document.getElementById('permanentMapSection');
+    if (mapDiv && permanentSection && !permanentSection.contains(mapDiv)) {
+        permanentSection.appendChild(mapDiv);
+    }
+
     if (leafletMap) {
         leafletMap.remove();
         leafletMap = null;

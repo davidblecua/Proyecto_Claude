@@ -247,11 +247,15 @@ function translateMachineryType(type) {
 let currentMachineryList = [];
 let activeTypeFilter = '';
 let dateFilterActive = false;
+let isLoadingMachinery = false;
 
 /**
  * Carga la maquinaria inicial y activa los botones de vista lista/mapa
  */
 async function loadInitialMachinery() {
+    if (isLoadingMachinery) return;
+    isLoadingMachinery = true;
+
     const grid = document.getElementById('machineryGrid');
     const spinner = document.getElementById('loadingSpinner');
 
@@ -308,6 +312,7 @@ async function loadInitialMachinery() {
         showAlert('Error al cargar la maquinaria', 'danger');
         gridEl.innerHTML = '<p class="text-center">Error al cargar la maquinaria. Por favor, intenta de nuevo.</p>';
     } finally {
+        isLoadingMachinery = false;
         if (document.getElementById('loadingSpinner')) {
             document.getElementById('loadingSpinner').style.display = 'none';
         }
