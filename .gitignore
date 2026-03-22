@@ -1,0 +1,11 @@
+# Ignorar todo por defecto
+/*
+
+# Permitir el propio .gitignore
+!/.gitignore
+
+# Permitir solo la carpeta de codigo
+!/01_codigo/
+
+# Dentro de 01_codigo, no ignorar nada
+!/01_codigo/**
