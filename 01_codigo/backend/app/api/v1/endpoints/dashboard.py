@@ -3,7 +3,7 @@ Endpoints de Dashboard
 KPIs y estadísticas del usuario autenticado
 """
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, timezone, timedelta
 from app.db.database import get_db
 from app.core.dependencies import get_current_user
@@ -54,12 +54,18 @@ def get_dashboard_stats(
         ).all()
         monthly_revenue = sum(b.total_cost for b in completed_this_month)
 
-        # Últimas 5 reservas recibidas
-        recent_bookings_raw = base_q.order_by(Booking.created_at.desc()).limit(5).all()
+        # Últimas 5 reservas recibidas — carga machinery y user en una sola query
+        recent_bookings_raw = (
+            base_q
+            .options(joinedload(Booking.machinery), joinedload(Booking.user))
+            .order_by(Booking.created_at.desc())
+            .limit(5)
+            .all()
+        )
         recent_bookings = []
         for b in recent_bookings_raw:
-            m = db.query(Machinery).filter(Machinery.id == b.machinery_id).first()
-            requester = db.query(User).filter(User.id == b.user_id).first()
+            m = b.machinery
+            requester = b.user
             recent_bookings.append({
                 "id": b.id,
                 "machinery_title": m.title if m else "—",
@@ -101,10 +107,16 @@ def get_dashboard_stats(
             ).all()
         )
 
-        recent_bookings_raw = my_bookings_q.order_by(Booking.created_at.desc()).limit(5).all()
+        recent_bookings_raw = (
+            my_bookings_q
+            .options(joinedload(Booking.machinery))
+            .order_by(Booking.created_at.desc())
+            .limit(5)
+            .all()
+        )
         recent_bookings = []
         for b in recent_bookings_raw:
-            m = db.query(Machinery).filter(Machinery.id == b.machinery_id).first()
+            m = b.machinery
             recent_bookings.append({
                 "id": b.id,
                 "machinery_title": m.title if m else "—",

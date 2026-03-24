@@ -89,7 +89,23 @@ class MachineryResponse(MachineryBase):
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
+    @validator('images', pre=True)
+    def deserialize_images(cls, v):
+        """Convierte el JSON string almacenado en DB a lista de strings"""
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            import json as _json
+            try:
+                parsed = _json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except Exception:
+                return []
+        return []
+
     class Config:
         from_attributes = True
 

@@ -328,14 +328,15 @@ function escHtml(str) {
 function buildMachineryTypeOptions(selected) {
     const types = [
         ['excavadora','Excavadora'],['retroexcavadora','Retroexcavadora'],
-        ['dumper','Dumper'],['pala_cargadora','Pala Cargadora'],
-        ['hormigonera','Hormigonera'],['camion_grua','Camión Grúa'],
-        ['grua_torre','Grúa Torre'],['manipulador_telescopico','Manipulador Telescópico'],
-        ['plataforma_elevadora','Plataforma Elevadora'],['carretilla_elevadora','Carretilla Elevadora'],
-        ['compactadora','Compactadora'],['bulldozer','Bulldozer'],
-        ['martillo_hidraulico','Martillo Hidráulico'],['generador','Generador'],
-        ['compresor','Compresor'],['andamio','Andamio'],
-        ['montacargas','Montacargas'],['bomba_hormigon','Bomba de Hormigón']
+        ['bulldozer','Bulldozer'],['motoniveladora','Motoniveladora'],
+        ['pala_cargadora','Pala Cargadora'],['dumper','Dumper'],
+        ['manipulador_telescopico','Manipulador Telescópico'],['carretilla_elevadora','Carretilla Elevadora'],
+        ['montacargas','Montacargas'],['compactadora','Compactadora'],
+        ['grua_torre','Grúa Torre'],['camion_grua','Camión Grúa'],
+        ['plataforma_elevadora','Plataforma Elevadora'],['hormigonera','Hormigonera'],
+        ['bomba_hormigon','Bomba de Hormigón'],['martillo_hidraulico','Martillo Hidráulico'],
+        ['cortadora_asfalto','Cortadora de Asfalto'],['compresor','Compresor'],
+        ['generador','Generador'],['andamio','Andamio']
     ];
     return types.map(([val, label]) =>
         `<option value="${val}" ${val === selected ? 'selected' : ''}>${label}</option>`
@@ -401,11 +402,7 @@ function showAddMachinery() {
                 <div class="form-group">
                     <label>Tipo de Maquinaria <span class="req">*</span></label>
                     <select class="form-control" id="machType" required>
-                        <option value="excavadora">Excavadora</option>
-                        <option value="dumper">Dumper</option>
-                        <option value="grua_torre">Grúa Torre</option>
-                        <option value="plataforma_elevadora">Plataforma Elevadora</option>
-                        <option value="compactadora">Compactadora</option>
+                        ${buildMachineryTypeOptions('')}
                     </select>
                 </div>
                 
@@ -572,11 +569,219 @@ function getStatusBadge(status) {
 }
 
 /**
- * Inicia el proceso de reserva
+ * Inicia el proceso de reserva — abre un modal con selector de fechas,
+ * resumen de coste en tiempo real y confirmación final.
  */
-function initiateBooking(machineryId) {
-    // Aquí se implementaría un formulario de reserva más completo
-    showAlert('Funcionalidad de reserva en desarrollo', 'info');
+async function initiateBooking(machineryId) {
+    if (!appState.isAuthenticated) {
+        showLogin();
+        return;
+    }
+
+    let machinery;
+    try {
+        machinery = await apiRequest(`/machinery/${machineryId}`);
+    } catch (e) {
+        showAlert('Error al cargar los detalles de la máquina', 'danger');
+        return;
+    }
+
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 8);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+
+    const deliveryCost = machinery.delivery_cost || 0;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'bookingModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-header">
+                <h3>Reservar: ${escHtml(machinery.title)}</h3>
+                <button class="modal-close" onclick="document.getElementById('bookingModal').remove()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-info-grid" style="margin-bottom:1rem;">
+                    <div><span class="detail-label">Precio diario</span><span><strong>${formatPrice(machinery.daily_rate)}</strong></span></div>
+                    ${machinery.weekly_rate ? `<div><span class="detail-label">Precio semanal</span><span>${formatPrice(machinery.weekly_rate)}</span></div>` : ''}
+                    <div><span class="detail-label">Depósito garantía</span><span>${formatPrice(machinery.deposit)}</span></div>
+                    <div><span class="detail-label">Ubicación</span><span>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
+                </div>
+
+                <form id="bookingForm" onsubmit="submitBooking(event, ${machineryId})">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>Fecha inicio <span class="req">*</span></label>
+                            <input type="date" class="form-control" id="bookStart"
+                                   min="${tomorrowStr}" value="${tomorrowStr}" required
+                                   onchange="updateBookingCost()">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha fin <span class="req">*</span></label>
+                            <input type="date" class="form-control" id="bookEnd"
+                                   min="${tomorrowStr}" value="${nextWeekStr}" required
+                                   onchange="updateBookingCost()">
+                        </div>
+                    </div>
+
+                    <div id="bookingCostSummary"
+                         data-daily-rate="${machinery.daily_rate}"
+                         data-deposit="${machinery.deposit}"
+                         data-delivery-cost="${deliveryCost}"
+                         style="margin-bottom:1rem;"></div>
+
+                    ${machinery.delivery_available ? `
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="bookDelivery" onchange="updateBookingCost()">
+                            Solicitar entrega${deliveryCost ? ` (+${formatPrice(deliveryCost)})` : ''}
+                        </label>
+                    </div>
+                    <div id="deliveryFields" style="display:none;">
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label>Ciudad de entrega</label>
+                                <input type="text" class="form-control" id="bookDeliveryCity"
+                                       placeholder="Madrid">
+                            </div>
+                            <div class="form-group">
+                                <label>Dirección de entrega</label>
+                                <input type="text" class="form-control" id="bookDeliveryAddress"
+                                       placeholder="Calle, número...">
+                            </div>
+                        </div>
+                    </div>` : ''}
+
+                    <div class="form-group">
+                        <label>Notas o requisitos especiales (opcional)</label>
+                        <textarea class="form-control" id="bookNotes" rows="2" maxlength="1000"
+                                  placeholder="Ej: necesito operario certificado, acceso por camino secundario..."></textarea>
+                    </div>
+
+                    <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
+                        <button type="button" class="btn btn-secondary"
+                                onclick="document.getElementById('bookingModal').remove()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="bookSubmitBtn">✅ Confirmar Reserva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Show delivery fields when checkbox is toggled
+    const deliveryCb = modal.querySelector('#bookDelivery');
+    if (deliveryCb) {
+        deliveryCb.addEventListener('change', () => {
+            const fields = document.getElementById('deliveryFields');
+            if (fields) fields.style.display = deliveryCb.checked ? 'block' : 'none';
+        });
+    }
+
+    updateBookingCost();
+}
+
+/**
+ * Recalcula y muestra el resumen de coste leyendo fechas del formulario
+ */
+function updateBookingCost() {
+    const summaryEl = document.getElementById('bookingCostSummary');
+    const startEl = document.getElementById('bookStart');
+    const endEl = document.getElementById('bookEnd');
+    if (!summaryEl || !startEl || !endEl) return;
+
+    const dailyRate = parseFloat(summaryEl.dataset.dailyRate);
+    const deposit = parseFloat(summaryEl.dataset.deposit);
+    const deliveryCost = parseFloat(summaryEl.dataset.deliveryCost || 0);
+
+    const start = startEl.value;
+    const end = endEl.value;
+
+    if (!start || !end || end <= start) {
+        summaryEl.innerHTML = '<p style="color:var(--danger-color);font-size:0.85rem;">La fecha de fin debe ser posterior a la de inicio.</p>';
+        return;
+    }
+
+    const days = Math.ceil((new Date(end) - new Date(start)) / 86400000);
+    const deliveryCb = document.getElementById('bookDelivery');
+    const chargedDelivery = (deliveryCb && deliveryCb.checked) ? deliveryCost : 0;
+    const subtotal = days * dailyRate;
+    const total = subtotal + chargedDelivery;
+
+    summaryEl.innerHTML = `
+        <div class="booking-summary-box">
+            <div class="booking-summary-row">
+                <span>${days} día${days !== 1 ? 's' : ''} × ${formatPrice(dailyRate)}/día</span>
+                <span>${formatPrice(subtotal)}</span>
+            </div>
+            ${chargedDelivery ? `
+            <div class="booking-summary-row">
+                <span>Entrega</span><span>${formatPrice(chargedDelivery)}</span>
+            </div>` : ''}
+            <div class="booking-summary-row booking-summary-total">
+                <span>Total alquiler</span><span><strong>${formatPrice(total)}</strong></span>
+            </div>
+            ${deposit > 0 ? `
+            <div class="booking-summary-row" style="color:var(--gray-600);font-size:0.82rem;border-top:none;padding-top:0;">
+                <span>+ Depósito de garantía (reembolsable)</span><span>${formatPrice(deposit)}</span>
+            </div>` : ''}
+        </div>
+    `;
+}
+
+/**
+ * Envía la reserva al backend
+ */
+async function submitBooking(event, machineryId) {
+    event.preventDefault();
+
+    const start = document.getElementById('bookStart').value;
+    const end = document.getElementById('bookEnd').value;
+
+    if (!start || !end || end <= start) {
+        showAlert('Selecciona fechas válidas (fin posterior a inicio)', 'danger');
+        return;
+    }
+
+    const deliveryCb = document.getElementById('bookDelivery');
+    const needsDelivery = !!(deliveryCb && deliveryCb.checked);
+
+    const payload = {
+        machinery_id: machineryId,
+        start_date: start + 'T00:00:01',
+        end_date: end + 'T23:59:59',
+        notes: document.getElementById('bookNotes').value.trim() || null,
+        needs_delivery: needsDelivery
+    };
+
+    if (needsDelivery) {
+        const cityEl = document.getElementById('bookDeliveryCity');
+        const addrEl = document.getElementById('bookDeliveryAddress');
+        if (cityEl) payload.delivery_city = cityEl.value.trim() || null;
+        if (addrEl) payload.delivery_address = addrEl.value.trim() || null;
+    }
+
+    const submitBtn = document.getElementById('bookSubmitBtn');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Reservando...'; }
+
+    try {
+        const booking = await apiRequest('/bookings', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        document.getElementById('bookingModal').remove();
+        showAlert(`✅ Reserva #${booking.id} creada. Total: ${formatPrice(booking.total_cost)}. Pendiente de confirmación.`, 'success');
+    } catch (e) {
+        showAlert('Error al crear la reserva: ' + e.message, 'danger');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✅ Confirmar Reserva'; }
+    }
 }
 
 /**

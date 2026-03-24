@@ -118,9 +118,9 @@ class MachineryService:
             order_col = Machinery.created_at
         
         if search_params.sort_order == "asc":
-            query = query.order_by(order_col.asc())
+            query = query.order_by(order_col.asc(), Machinery.id.asc())
         else:
-            query = query.order_by(order_col.desc())
+            query = query.order_by(order_col.desc(), Machinery.id.desc())
         
         # Paginación
         machinery_list = query.offset(search_params.skip).limit(search_params.limit).all()

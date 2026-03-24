@@ -25,6 +25,7 @@ function showLogin() {
                 </div>
                 <div class="text-center mt-2">
                     <p>¿No tienes cuenta? <a href="#" onclick="showRegister()">Regístrate aquí</a></p>
+                    <p><a href="#" onclick="showForgotPassword()" style="font-size:0.88rem;color:var(--gray-600);">¿Olvidaste tu contraseña?</a></p>
                 </div>
                 <hr>
                 <div class="form-group">
@@ -180,7 +181,7 @@ async function showDashboard() {
                     <img src="${getUserAvatar()}" alt="Perfil" class="avatar-nav" style="width:48px;height:48px;">
                 </div>
                 <div>
-                    <h1 style="margin:0;">Bienvenido, ${user.full_name.split(' ')[0]}</h1>
+                    <h1 style="margin:0;">Bienvenido, ${escHtml(user.full_name.split(' ')[0])}</h1>
                     <span class="role-badge">${translateRole(user.role)}</span>
                 </div>
             </div>
@@ -341,29 +342,29 @@ function showProfile() {
                 </div>
                 <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="changeProfilePhoto(event)">
                 <p style="color:var(--gray-500);font-size:0.82rem;margin-top:0.4rem;">Haz clic en la foto para cambiarla</p>
-                <h2>${user.full_name || user.username}</h2>
+                <h2>${escHtml(user.full_name || user.username)}</h2>
                 <span class="role-badge">${translateRole(user.role)}</span>
             </div>
 
             <div class="profile-info-row">
                 <span class="profile-info-label">Nombre</span>
-                <span class="profile-info-value">${user.full_name || '—'}</span>
+                <span class="profile-info-value">${escHtml(user.full_name || '—')}</span>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Usuario</span>
-                <span class="profile-info-value">@${user.username}</span>
+                <span class="profile-info-value">@${escHtml(user.username)}</span>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Email</span>
-                <span class="profile-info-value">${user.email}</span>
+                <span class="profile-info-value">${escHtml(user.email)}</span>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Teléfono</span>
-                <span class="profile-info-value">${user.phone || '—'}</span>
+                <span class="profile-info-value">${escHtml(user.phone || '—')}</span>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Empresa</span>
-                <span class="profile-info-value">${user.company_name || '—'}</span>
+                <span class="profile-info-value">${escHtml(user.company_name || '—')}</span>
             </div>
             <div class="profile-info-row">
                 <span class="profile-info-label">Rol</span>
@@ -402,4 +403,134 @@ function changeProfilePhoto(event) {
         showAlert('Foto de perfil actualizada', 'success');
     };
     reader.readAsDataURL(file);
+}
+
+/**
+ * Muestra el formulario de recuperación de contraseña (paso 1: introducir email)
+ */
+function showForgotPassword() {
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = `
+        <div class="form-container">
+            <h2>Recuperar Contraseña</h2>
+            <p style="color:var(--gray-600);margin-bottom:1.5rem;">
+                Introduce tu email y recibirás un enlace para crear una nueva contraseña.
+            </p>
+            <form id="forgotForm" onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label for="forgotEmail">Email <span class="req">*</span></label>
+                    <input type="email" class="form-control" id="forgotEmail" required autofocus>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" style="width:100%;" id="forgotBtn">
+                        Enviar instrucciones
+                    </button>
+                </div>
+                <div class="text-center mt-2">
+                    <p><a href="#" onclick="showLogin()">← Volver al inicio de sesión</a></p>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+/**
+ * Envía la solicitud de recuperación de contraseña
+ */
+async function handleForgotPassword(event) {
+    event.preventDefault();
+    const email = document.getElementById('forgotEmail').value;
+    const btn = document.getElementById('forgotBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+        const data = await apiRequest('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="form-container" style="text-align:center;">
+                <div style="font-size:3rem;margin-bottom:1rem;">📧</div>
+                <h2>Revisa tu correo</h2>
+                <p style="color:var(--gray-600);">${escHtml(data.message)}</p>
+                <button class="btn btn-secondary mt-3" onclick="showLogin()">← Volver al login</button>
+            </div>
+        `;
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'danger');
+        btn.disabled = false;
+        btn.textContent = 'Enviar instrucciones';
+    }
+}
+
+/**
+ * Muestra el formulario de nueva contraseña (paso 2: introducir nueva contraseña)
+ * @param {string} token - Token de recuperación recibido por email / URL
+ */
+function showResetPassword(token) {
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = `
+        <div class="form-container">
+            <h2>Nueva Contraseña</h2>
+            <p style="color:var(--gray-600);margin-bottom:1.5rem;">
+                Introduce tu nueva contraseña. Debe tener al menos 8 caracteres, un número y una mayúscula.
+            </p>
+            <form id="resetForm" onsubmit="handleResetPassword(event, ${JSON.stringify(token)})">
+                <div class="form-group">
+                    <label for="resetPwd">Nueva contraseña <span class="req">*</span></label>
+                    <input type="password" class="form-control" id="resetPwd" required
+                           minlength="8" placeholder="Mín. 8 caracteres, 1 número, 1 mayúscula" autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="resetPwd2">Confirmar contraseña <span class="req">*</span></label>
+                    <input type="password" class="form-control" id="resetPwd2" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary" style="width:100%;" id="resetBtn">
+                        Guardar nueva contraseña
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+/**
+ * Envía la nueva contraseña al backend
+ */
+async function handleResetPassword(event, token) {
+    event.preventDefault();
+    const pwd = document.getElementById('resetPwd').value;
+    const pwd2 = document.getElementById('resetPwd2').value;
+
+    if (pwd !== pwd2) {
+        showAlert('Las contraseñas no coinciden', 'danger');
+        return;
+    }
+
+    const btn = document.getElementById('resetBtn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        const data = await apiRequest('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ token, new_password: pwd })
+        });
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="form-container" style="text-align:center;">
+                <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+                <h2>¡Contraseña actualizada!</h2>
+                <p style="color:var(--gray-600);">${escHtml(data.message)}</p>
+                <button class="btn btn-primary mt-3" onclick="showLogin()">Iniciar sesión</button>
+            </div>
+        `;
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'danger');
+        btn.disabled = false;
+        btn.textContent = 'Guardar nueva contraseña';
+    }
 }

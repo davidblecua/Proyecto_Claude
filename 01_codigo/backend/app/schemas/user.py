@@ -104,3 +104,22 @@ class UserListResponse(BaseModel):
     """Schema para lista de usuarios"""
     total: int
     users: list[UserResponse]
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Schema para solicitar recuperación de contraseña"""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema para establecer nueva contraseña con token"""
+    token: str = Field(..., min_length=10)
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+    @validator('new_password')
+    def password_strength(cls, v):
+        if not any(c.isdigit() for c in v):
+            raise ValueError('La contraseña debe contener al menos un número')
+        if not any(c.isupper() for c in v):
+            raise ValueError('La contraseña debe contener al menos una mayúscula')
+        return v

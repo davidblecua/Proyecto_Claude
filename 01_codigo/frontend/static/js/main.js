@@ -6,6 +6,19 @@
 // Configuración de la API
 const API_BASE_URL = window.location.origin + '/api/v1';
 
+/**
+ * Escapa caracteres HTML especiales para prevenir XSS
+ */
+function escHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Avatar por defecto (SVG inline como data URI, sin dependencias externas)
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23e9ecef'/%3E%3Ccircle cx='50' cy='37' r='20' fill='%23adb5bd'/%3E%3Cellipse cx='50' cy='94' rx='34' ry='26' fill='%23adb5bd'/%3E%3C/svg%3E";
 
@@ -28,42 +41,56 @@ const appState = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('RentaMaq iniciado');
 
-    // Capturar tokens de Google SSO si vienen en la URL
+    // Capturar token de recuperación de contraseña si viene en la URL
+    const resetToken = urlParams.get('reset_token');
+    if (resetToken) {
+        window.history.replaceState({}, document.title, '/');
+        // Cargar maquinaria de fondo y mostrar el formulario de reset
+        loadInitialMachinery();
+        initMap();
+        showResetPassword(resetToken);
+        return;
+    }
+
+    // Capturar código SSO de Google (nunca los JWT en la URL)
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-    const userId = urlParams.get('user_id');
-    if (accessToken && refreshToken) {
-        // Guardamos tokens en localStorage para persistencia entre recargas
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
-
-        // IMPORTANTE: asignar el token al estado ANTES de llamar a apiRequest,
-        // porque apiRequest lee appState.authToken para construir la cabecera
-        // Authorization. Si no se asigna aquí, la petición sale sin token → 401.
-        appState.authToken = accessToken;
-
-        // Limpiamos los tokens de la URL para no exponerlos en el historial
-        // (buena práctica de seguridad OAuth2: RFC 6749 §10.6)
+    const ssoCode = urlParams.get('sso_code');
+    if (ssoCode) {
+        // Limpiar la URL inmediatamente — el código es de un solo uso,
+        // pero aun así no queremos que quede en el historial del navegador.
         window.history.replaceState({}, document.title, '/');
 
-        // Obtenemos el perfil completo del usuario desde el backend
-        apiRequest('/auth/me').then(user => {
-            localStorage.setItem('current_user', JSON.stringify(user));
-            appState.currentUser = user;
-            appState.isAuthenticated = true;
-            updateNavbarForAuthenticatedUser();
-            showAlert('¡Bienvenido, ' + user.full_name + '!', 'success');
-            showDashboard();
-        }).catch(err => {
-            // Si falla (token inválido, expirado, etc.) limpiamos el estado
-            // y mostramos un error descriptivo en lugar del genérico de sesión
-            console.error('Error cargando perfil tras Google SSO:', err);
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            appState.authToken = null;
-            showAlert('No se pudo cargar tu perfil de Google. Inténtalo de nuevo.', 'danger');
-        });
+        // Intercambiar el código por los tokens JWT (viajan en el cuerpo JSON,
+        // nunca en la URL ni en el historial del navegador).
+        fetch(`${API_BASE_URL}/auth/google/token?code=${encodeURIComponent(ssoCode)}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Código SSO inválido o expirado');
+                return res.json();
+            })
+            .then(data => {
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                appState.authToken = data.access_token;
+                return fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${data.access_token}` }
+                });
+            })
+            .then(res => res.json())
+            .then(user => {
+                localStorage.setItem('current_user', JSON.stringify(user));
+                appState.currentUser = user;
+                appState.isAuthenticated = true;
+                updateNavbarForAuthenticatedUser();
+                showAlert('¡Bienvenido, ' + user.full_name + '!', 'success');
+                showDashboard();
+            })
+            .catch(err => {
+                console.error('Error en Google SSO:', err);
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                appState.authToken = null;
+                showAlert('No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo.', 'danger');
+            });
         return;
     }
 
@@ -75,6 +102,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar el mapa permanente (sin necesidad de login)
     initMap();
+
+    // Cerrar menú hamburguesa al hacer clic fuera de él
+    document.addEventListener('click', function(e) {
+        const navbar = document.getElementById('mainNavbar');
+        if (navbar && navbar.classList.contains('open') && !navbar.contains(e.target)) {
+            navbar.classList.remove('open');
+        }
+    });
+
+    // Cerrar menú hamburguesa al hacer clic en cualquier enlace del menú
+    const navMenus = document.getElementById('navbarMenus');
+    if (navMenus) {
+        navMenus.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link) document.getElementById('mainNavbar').classList.remove('open');
+        });
+    }
 });
 
 /**
@@ -119,50 +163,94 @@ function updateNavbarForAuthenticatedUser() {
     }
 }
 
+// Flag para evitar múltiples peticiones de refresh simultáneas
+let _isRefreshing = false;
+
 /**
- * Realiza una petición a la API
+ * Intenta renovar el access token usando el refresh token almacenado.
+ * Devuelve true si el refresh fue exitoso, false en cualquier otro caso.
+ */
+async function tryRefreshToken() {
+    if (_isRefreshing) return false;
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
+    _isRefreshing = true;
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        if (!response.ok) return false;
+
+        const data = await response.json();
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+        if (data.user) localStorage.setItem('current_user', JSON.stringify(data.user));
+        appState.authToken = data.access_token;
+        return true;
+    } catch (e) {
+        return false;
+    } finally {
+        _isRefreshing = false;
+    }
+}
+
+/**
+ * Realiza una petición a la API.
+ * Si recibe un 401, intenta renovar el token automáticamente y reintenta
+ * la petición original una vez. Si el refresh falla, cierra la sesión.
  */
 async function apiRequest(endpoint, options = {}) {
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json'
-        }
+    const buildOptions = (token) => {
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return { ...options, headers };
     };
-    
-    // Agregar token de autenticación si está disponible
-    if (appState.authToken) {
-        defaultOptions.headers['Authorization'] = `Bearer ${appState.authToken}`;
-    }
-    
-    const finalOptions = {
-        ...defaultOptions,
-        ...options,
-        headers: {
-            ...defaultOptions.headers,
-            ...options.headers
-        }
-    };
-    
+
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, finalOptions);
-        
-        // Si es 401, el token expiró
-        if (response.status === 401) {
+        const response = await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            buildOptions(appState.authToken)
+        );
+
+        if (response.status === 401 && !endpoint.includes('/auth/refresh')) {
+            // Intentar refresh automático (solo una vez, nunca en el endpoint de refresh)
+            const refreshed = await tryRefreshToken();
+            if (refreshed) {
+                // Reintentar la petición original con el nuevo token
+                const retryResponse = await fetch(
+                    `${API_BASE_URL}${endpoint}`,
+                    buildOptions(appState.authToken)
+                );
+                if (retryResponse.status === 401) {
+                    handleUnauthorized();
+                    throw new Error('Sesión expirada');
+                }
+                if (!retryResponse.ok) {
+                    const err = await retryResponse.json();
+                    throw new Error(
+                        Array.isArray(err.detail)
+                            ? err.detail.map(e => e.msg).join(', ')
+                            : err.detail || 'Error en la petición'
+                    );
+                }
+                return await retryResponse.json();
+            }
             handleUnauthorized();
             throw new Error('Sesión expirada');
         }
-        
+
         if (!response.ok) {
             const error = await response.json();
-            let errorMessage;
-            if (Array.isArray(error.detail)) {
-                errorMessage = error.detail.map(e => e.msg).join(', ');
-            } else {
-                errorMessage = error.detail || 'Error en la petición';
-            }
-            throw new Error(errorMessage);
+            throw new Error(
+                Array.isArray(error.detail)
+                    ? error.detail.map(e => e.msg).join(', ')
+                    : error.detail || 'Error en la petición'
+            );
         }
-        
+
         return await response.json();
     } catch (error) {
         console.error('Error en API:', error);
@@ -366,17 +454,17 @@ function createMachineryCard(machinery) {
         : 'https://via.placeholder.com/300x200?text=' + encodeURIComponent(machinery.title);
     
     card.innerHTML = `
-        <img src="${imageUrl}" alt="${machinery.title}" class="card-image" 
+        <img src="${imageUrl}" alt="${escHtml(machinery.title)}" class="card-image"
              onerror="this.src='https://via.placeholder.com/300x200?text=Sin+Imagen'">
         <div class="card-body">
-            <h3 class="card-title">${machinery.title}</h3>
+            <h3 class="card-title">${escHtml(machinery.title)}</h3>
             <p class="card-text">
                 <span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span>
-                ${machinery.brand ? `<span class="badge badge-secondary">${machinery.brand}</span>` : ''}
+                ${machinery.brand ? `<span class="badge badge-secondary">${escHtml(machinery.brand)}</span>` : ''}
             </p>
-            <p class="card-text">${machinery.description.substring(0, 100)}...</p>
+            <p class="card-text">${escHtml(machinery.description.substring(0, 100))}...</p>
             <p class="card-text">
-                <strong>📍 ${machinery.location_city}, ${machinery.location_province}</strong>
+                <strong>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</strong>
             </p>
             <div class="card-footer">
                 <div>
@@ -423,26 +511,26 @@ function showMachineryModal(machinery) {
     modal.innerHTML = `
         <div class="modal-dialog modal-lg">
             <div class="modal-header">
-                <h3>${machinery.title}</h3>
+                <h3>${escHtml(machinery.title)}</h3>
                 <button class="modal-close" onclick="document.getElementById('machineryDetailModal').remove()">✕</button>
             </div>
             <div class="modal-body">
-                <img src="${imgUrl}" alt="${machinery.title}" style="width:100%;height:220px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
+                <img src="${imgUrl}" alt="${escHtml(machinery.title)}" style="width:100%;height:220px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
                      onerror="this.src='https://via.placeholder.com/600x220?text=Sin+Imagen'">
 
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
                     <span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span>
-                    ${machinery.brand ? `<span class="badge badge-secondary">${machinery.brand} ${machinery.model || ''}</span>` : ''}
+                    ${machinery.brand ? `<span class="badge badge-secondary">${escHtml(machinery.brand)} ${escHtml(machinery.model || '')}</span>` : ''}
                     ${machinery.year ? `<span class="badge badge-secondary">${machinery.year}</span>` : ''}
                     ${machinery.is_available
                         ? '<span class="badge badge-success">Disponible</span>'
                         : '<span class="badge badge-warning">No disponible</span>'}
                 </div>
 
-                <p style="color:var(--gray-700);margin-bottom:1rem;">${machinery.description}</p>
+                <p style="color:var(--gray-700);margin-bottom:1rem;">${escHtml(machinery.description)}</p>
 
                 <div class="detail-info-grid">
-                    <div><span class="detail-label">Ubicación</span><span>📍 ${machinery.location_city}, ${machinery.location_province}</span></div>
+                    <div><span class="detail-label">Ubicación</span><span>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
                     <div><span class="detail-label">Precio diario</span><span><strong>${formatPrice(machinery.daily_rate)}</strong></span></div>
                     ${machinery.weekly_rate ? `<div><span class="detail-label">Precio semanal</span><span>${formatPrice(machinery.weekly_rate)}</span></div>` : ''}
                     ${machinery.monthly_rate ? `<div><span class="detail-label">Precio mensual</span><span>${formatPrice(machinery.monthly_rate)}</span></div>` : ''}
@@ -599,6 +687,20 @@ function renderAvailabilityCalendar(availability, start, end) {
  */
 function scrollToSearch() {
     document.getElementById('searchBox').scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Abre/cierra el menú hamburguesa en móvil
+ */
+function toggleNavbar() {
+    document.getElementById('mainNavbar').classList.toggle('open');
+}
+
+/**
+ * Cierra el menú hamburguesa
+ */
+function closeNavbar() {
+    document.getElementById('mainNavbar').classList.remove('open');
 }
 
 // ===== FILTER BAR (tipo + disponibilidad por fechas) =====

@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
+    # URL pública del frontend (usada en emails de recuperación de contraseña, etc.)
+    APP_URL: str = "http://localhost:8080"
+
     # Google OAuth SSO
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None

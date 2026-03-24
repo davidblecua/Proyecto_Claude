@@ -1372,22 +1372,139 @@ body {
     background: var(--gray-100);
 }
 
+/* ===== HAMBURGER MENU ===== */
+.navbar-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    z-index: 1001;
+}
+
+.navbar-toggle span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--dark-color);
+    border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+/* Animación X cuando está abierto */
+.navbar.open .navbar-toggle span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+.navbar.open .navbar-toggle span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+.navbar.open .navbar-toggle span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .hero h1 {
         font-size: 2rem;
     }
-    
+
     .search-form {
         grid-template-columns: 1fr;
     }
-    
-    .navbar-menu {
-        flex-direction: column;
-        gap: 1rem;
-    }
-    
+
     .card-grid {
         grid-template-columns: 1fr;
     }
+
+    /* Mostrar botón hamburguesa */
+    .navbar-toggle {
+        display: flex;
+    }
+
+    /* El navbar necesita position:relative para el menú absoluto */
+    .navbar {
+        position: sticky;
+    }
+
+    /* Menús ocultos por defecto en móvil */
+    .navbar-menus {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--white);
+        border-top: 1px solid var(--gray-200);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+        padding: 0.75rem 1rem 1rem;
+        flex-direction: column;
+        gap: 0;
+        z-index: 999;
+    }
+
+    /* Mostrar menús cuando el nav tiene clase .open */
+    .navbar.open .navbar-menus {
+        display: flex;
+    }
+
+    /* Ajustes de los items del menú en móvil */
+    .navbar-menu {
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+    }
+
+    .navbar-menu li {
+        width: 100%;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .navbar-menu li:last-child {
+        border-bottom: none;
+        margin-top: 0.5rem;
+    }
+
+    .navbar-menu a {
+        display: block;
+        padding: 0.65rem 0.25rem;
+        width: 100%;
+    }
+
+    .navbar-menu .btn {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-top: 0;
+    }
+}
+
+/* ===== BOOKING SUMMARY ===== */
+.booking-summary-box {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 0.85rem 1rem;
+}
+
+.booking-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.3rem 0;
+    border-top: 1px solid var(--gray-200);
+    font-size: 0.9rem;
+}
+
+.booking-summary-row:first-child { border-top: none; }
+
+.booking-summary-total {
+    border-top: 2px solid var(--gray-300);
+    margin-top: 0.25rem;
+    padding-top: 0.5rem;
+    font-size: 1rem;
+    color: var(--gray-900);
 }

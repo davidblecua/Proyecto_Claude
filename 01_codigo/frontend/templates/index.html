@@ -12,36 +12,41 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
+    <nav class="navbar" id="mainNavbar">
         <div class="container navbar-content">
             <a href="/" class="navbar-brand">
                 🏗️ RentaMaq
             </a>
-            <ul class="navbar-menu" id="navbarMenu">
-                <li><a href="/">Inicio</a></li>
-                <li><a href="#" onclick="showMachinery()">Maquinaria</a></li>
-                <li><a href="#" onclick="showLogin()">Iniciar Sesión</a></li>
-                <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
-            </ul>
-            <ul class="navbar-menu" id="navbarMenuAuth" style="display: none;">
-                <li>
-                    <a href="#" onclick="showProfile()" style="display:flex;align-items:center;gap:8px;">
-                        <img id="navAvatar" src="" alt="Perfil" class="avatar-nav">
-                        <span id="navUserName"></span>
-                    </a>
-                </li>
-                <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
-                <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
-                <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
-                <li><a href="#" onclick="showMyOperators()">Mis Operarios</a></li>
-                <li>
-                    <a href="#" onclick="showInbox()" style="position:relative;">
-                        Mensajes
-                        <span id="msgUnreadBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--danger-color);color:white;border-radius:999px;font-size:0.65rem;min-width:16px;height:16px;padding:0 3px;align-items:center;justify-content:center;font-weight:700;"></span>
-                    </a>
-                </li>
-                <li><a href="#" onclick="logout()" class="btn btn-danger">Cerrar Sesión</a></li>
-            </ul>
+            <button class="navbar-toggle" id="navbarToggle" onclick="toggleNavbar()" aria-label="Abrir menú">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-menus" id="navbarMenus">
+                <ul class="navbar-menu" id="navbarMenu">
+                    <li><a href="/">Inicio</a></li>
+                    <li><a href="#" onclick="showMachinery()">Maquinaria</a></li>
+                    <li><a href="#" onclick="showLogin()">Iniciar Sesión</a></li>
+                    <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
+                </ul>
+                <ul class="navbar-menu" id="navbarMenuAuth" style="display: none;">
+                    <li>
+                        <a href="#" onclick="showProfile()" style="display:flex;align-items:center;gap:8px;">
+                            <img id="navAvatar" src="" alt="Perfil" class="avatar-nav">
+                            <span id="navUserName"></span>
+                        </a>
+                    </li>
+                    <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
+                    <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
+                    <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
+                    <li><a href="#" onclick="showMyOperators()">Mis Operarios</a></li>
+                    <li>
+                        <a href="#" onclick="showInbox()" style="position:relative;">
+                            Mensajes
+                            <span id="msgUnreadBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--danger-color);color:white;border-radius:999px;font-size:0.65rem;min-width:16px;height:16px;padding:0 3px;align-items:center;justify-content:center;font-weight:700;"></span>
+                        </a>
+                    </li>
+                    <li><a href="#" onclick="logout()" class="btn btn-danger">Cerrar Sesión</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
@@ -212,9 +217,9 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js?v=14"></script>
-    <script src="/static/js/auth.js?v=7"></script>
-    <script src="/static/js/search.js?v=8"></script>
+    <script src="/static/js/main.js?v=18"></script>
+    <script src="/static/js/auth.js?v=9"></script>
+    <script src="/static/js/search.js?v=9"></script>
     <script src="/static/js/map.js?v=3"></script>
     <script src="/static/js/operators.js?v=1"></script>
 </body>
