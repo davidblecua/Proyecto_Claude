@@ -229,21 +229,26 @@ function translateMachineryType(type) {
     const translations = {
         'excavadora': 'Excavadora',
         'retroexcavadora': 'Retroexcavadora',
-        'dumper': 'Dumper',
-        'pala_cargadora': 'Pala Cargadora',
-        'hormigonera': 'Hormigonera',
-        'camion_grua': 'Camión Grúa',
-        'grua_torre': 'Grúa Torre',
-        'manipulador_telescopico': 'Manipulador Telescópico',
-        'plataforma_elevadora': 'Plataforma Elevadora',
-        'carretilla_elevadora': 'Carretilla Elevadora',
-        'compactadora': 'Compactadora',
         'bulldozer': 'Bulldozer',
-        'martillo_hidraulico': 'Martillo Hidráulico',
+        'motoniveladora': 'Motoniveladora',
+        'pala_cargadora': 'Pala Cargadora',
+        'dumper': 'Dumper',
+        'manipulador_telescopico': 'Manipulador Telescopico',
+        'carretilla_elevadora': 'Carretilla Elevadora',
+        'montacargas': 'Montacargas',
+        'compactadora': 'Compactadora',
+        'grua_torre': 'Grua Torre',
+        'camion_grua': 'Camion Grua',
+        'plataforma_elevadora': 'Plataforma Elevadora',
+        'hormigonera': 'Hormigonera',
+        'bomba_hormigon': 'Bomba de Hormigon',
+        'martillo_hidraulico': 'Martillo Hidraulico',
+        'cortadora_asfalto': 'Cortadora de Asfalto',
+        'compresor': 'Compresor',
         'generador': 'Generador',
-        'compresor': 'Compresor'
+        'andamio': 'Andamio',
     };
-    
+
     return translations[type] || type;
 }
 
@@ -600,21 +605,33 @@ function scrollToSearch() {
 
 const MACHINERY_TYPES = [
     ['', 'Todas'],
+    // Excavacion y movimiento de tierras
     ['excavadora', 'Excavadora'],
     ['retroexcavadora', 'Retroexcavadora'],
-    ['dumper', 'Dumper'],
-    ['pala_cargadora', 'Pala Cargadora'],
-    ['hormigonera', 'Hormigonera'],
-    ['camion_grua', 'Camión Grua'],
-    ['grua_torre', 'Grua Torre'],
-    ['manipulador_telescopico', 'Manipulador Telescopico'],
-    ['plataforma_elevadora', 'Plataforma Elevadora'],
-    ['carretilla_elevadora', 'Carretilla Elevadora'],
-    ['compactadora', 'Compactadora'],
     ['bulldozer', 'Bulldozer'],
+    ['motoniveladora', 'Motoniveladora'],
+    // Carga y transporte
+    ['pala_cargadora', 'Pala Cargadora'],
+    ['dumper', 'Dumper'],
+    ['manipulador_telescopico', 'Manipulador Telescopico'],
+    ['carretilla_elevadora', 'Carretilla Elevadora'],
+    ['montacargas', 'Montacargas'],
+    // Compactacion
+    ['compactadora', 'Compactadora'],
+    // Elevacion
+    ['grua_torre', 'Grua Torre'],
+    ['camion_grua', 'Camion Grua'],
+    ['plataforma_elevadora', 'Plataforma Elevadora'],
+    // Hormigon
+    ['hormigonera', 'Hormigonera'],
+    ['bomba_hormigon', 'Bomba de Hormigon'],
+    // Demolicion y corte
     ['martillo_hidraulico', 'Martillo Hidraulico'],
-    ['generador', 'Generador'],
+    ['cortadora_asfalto', 'Cortadora de Asfalto'],
+    // Auxiliares
     ['compresor', 'Compresor'],
+    ['generador', 'Generador'],
+    ['andamio', 'Andamio'],
 ];
 
 function renderFilterBar() {

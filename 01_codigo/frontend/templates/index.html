@@ -66,21 +66,40 @@
                         <label for="machineryType">Tipo de Máquina</label>
                         <select class="form-control" id="machineryType">
                             <option value="">Todas</option>
-                            <option value="excavadora">Excavadora</option>
-                            <option value="retroexcavadora">Retroexcavadora</option>
-                            <option value="dumper">Dumper</option>
-                            <option value="pala_cargadora">Pala Cargadora</option>
-                            <option value="hormigonera">Hormigonera</option>
-                            <option value="camion_grua">Camión Grúa</option>
-                            <option value="grua_torre">Grúa Torre</option>
-                            <option value="manipulador_telescopico">Manipulador Telescópico</option>
-                            <option value="plataforma_elevadora">Plataforma Elevadora</option>
-                            <option value="carretilla_elevadora">Carretilla Elevadora</option>
-                            <option value="compactadora">Compactadora</option>
-                            <option value="bulldozer">Bulldozer</option>
-                            <option value="martillo_hidraulico">Martillo Hidráulico</option>
-                            <option value="generador">Generador</option>
-                            <option value="compresor">Compresor</option>
+                            <optgroup label="Excavacion y movimiento">
+                                <option value="excavadora">Excavadora</option>
+                                <option value="retroexcavadora">Retroexcavadora</option>
+                                <option value="bulldozer">Bulldozer</option>
+                                <option value="motoniveladora">Motoniveladora</option>
+                            </optgroup>
+                            <optgroup label="Carga y transporte">
+                                <option value="pala_cargadora">Pala Cargadora</option>
+                                <option value="dumper">Dumper</option>
+                                <option value="manipulador_telescopico">Manipulador Telescopico</option>
+                                <option value="carretilla_elevadora">Carretilla Elevadora</option>
+                                <option value="montacargas">Montacargas</option>
+                            </optgroup>
+                            <optgroup label="Compactacion">
+                                <option value="compactadora">Compactadora</option>
+                            </optgroup>
+                            <optgroup label="Elevacion">
+                                <option value="grua_torre">Grua Torre</option>
+                                <option value="camion_grua">Camion Grua</option>
+                                <option value="plataforma_elevadora">Plataforma Elevadora</option>
+                            </optgroup>
+                            <optgroup label="Hormigon">
+                                <option value="hormigonera">Hormigonera</option>
+                                <option value="bomba_hormigon">Bomba de Hormigon</option>
+                            </optgroup>
+                            <optgroup label="Demolicion y corte">
+                                <option value="martillo_hidraulico">Martillo Hidraulico</option>
+                                <option value="cortadora_asfalto">Cortadora de Asfalto</option>
+                            </optgroup>
+                            <optgroup label="Equipos auxiliares">
+                                <option value="compresor">Compresor</option>
+                                <option value="generador">Generador</option>
+                                <option value="andamio">Andamio</option>
+                            </optgroup>
                         </select>
                     </div>
                     
