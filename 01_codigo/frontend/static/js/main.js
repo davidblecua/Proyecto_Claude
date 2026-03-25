@@ -41,6 +41,8 @@ const appState = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('RentaMaq iniciado');
 
+    const urlParams = new URLSearchParams(window.location.search);
+
     // Capturar token de recuperación de contraseña si viene en la URL
     const resetToken = urlParams.get('reset_token');
     if (resetToken) {
@@ -53,7 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Capturar código SSO de Google (nunca los JWT en la URL)
-    const urlParams = new URLSearchParams(window.location.search);
     const ssoCode = urlParams.get('sso_code');
     if (ssoCode) {
         // Limpiar la URL inmediatamente — el código es de un solo uso,
