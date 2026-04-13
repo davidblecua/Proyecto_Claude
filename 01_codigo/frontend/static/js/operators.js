@@ -313,6 +313,8 @@ async function showOperatorModal(operatorId) {
                 </div>` : `
                 <div class="alert alert-warning" style="margin-top:1rem;">Este operario no esta disponible actualmente.</div>`}
 
+                <div id="operatorReviews_${op.id}" style="margin-top:1.5rem;"></div>
+
                 <div style="margin-top:1.5rem;">
                     <button class="btn btn-secondary" onclick="closeOperatorModal()">Cerrar</button>
                 </div>
@@ -322,6 +324,7 @@ async function showOperatorModal(operatorId) {
 
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) closeOperatorModal(); });
+    loadReviews('operator', op.id, `operatorReviews_${op.id}`);
 
     // Mostrar preview de coste al cambiar fechas
     if (appState.isAuthenticated && op.is_available && !isOwner) {
@@ -432,7 +435,7 @@ async function showMyOperators() {
         if (!data || data.length === 0) {
             grid.innerHTML = `
                 <div style="grid-column:1/-1;text-align:center;padding:3rem;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">👷</div>
+                    <div style="font-size:3rem;margin-bottom:1rem;"></div>
                     <h3>No has publicado ningun operario</h3>
                     <p style="color:var(--gray-600);margin-bottom:1rem;">Publica el perfil de un operario para que otros puedan contratarlo</p>
                     <button class="btn btn-success" onclick="showPublishOperator()">Publicar Operario</button>

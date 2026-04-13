@@ -146,7 +146,7 @@ function buildPopupContent(m) {
         <div class="map-popup">
             <strong>${m.title}</strong>
             <p style="margin:4px 0;color:#6c757d;font-size:0.85rem;">${type}${m.brand ? ' · ' + m.brand : ''}</p>
-            <p style="margin:4px 0;font-size:0.85rem;">📍 ${m.location_city}, ${m.location_province}</p>
+            <p style="margin:4px 0;font-size:0.85rem;">${m.location_city}, ${m.location_province}</p>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
                 <strong style="color:#FF6B35;font-size:1rem;">${price}/día</strong>
                 ${avail}
@@ -239,8 +239,8 @@ async function showMapView(machineryList) {
         <div class="map-toggle-bar">
             <h2>Maquinaria Disponible <span class="map-count">${machineryList.length} resultados</span></h2>
             <div class="map-view-buttons">
-                <button class="btn-view" onclick="switchToListView()" title="Vista lista">☰ Lista</button>
-                <button class="btn-view active" title="Vista mapa">🗺️ Mapa</button>
+                <button class="btn-view" onclick="switchToListView()" title="Vista lista">Lista</button>
+                <button class="btn-view active" title="Vista mapa">Mapa</button>
             </div>
         </div>
         <div class="map-layout">
@@ -311,7 +311,7 @@ function buildSidebarCard(m, marker, coords) {
         <div class="map-card-info">
             <div class="map-card-title">${m.title}</div>
             <div class="map-card-meta">${translateMachineryType(m.machinery_type)}${m.brand ? ' · ' + m.brand : ''}</div>
-            <div class="map-card-location">📍 ${m.location_city}, ${m.location_province}</div>
+            <div class="map-card-location">${m.location_city}, ${m.location_province}</div>
             <div class="map-card-footer">
                 <span class="map-card-price">${formatPrice(m.daily_rate)}<small>/día</small></span>
                 <span class="map-card-badge ${m.is_available ? 'avail' : 'unavail'}">
@@ -335,6 +335,38 @@ function buildSidebarCard(m, marker, coords) {
     });
 
     return div;
+}
+
+// ── Búsqueda de ubicación en el mapa (Nominatim) ─────────────────────────────
+async function searchMapLocation() {
+    const input = document.getElementById('mapSearchInput');
+    const errorEl = document.getElementById('mapSearchError');
+    const query = input ? input.value.trim() : '';
+
+    if (!query) return;
+    if (errorEl) errorEl.style.display = 'none';
+
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=es`;
+        const res = await fetch(url, {
+            headers: { 'Accept-Language': 'es', 'User-Agent': 'RentaMaq/1.0' }
+        });
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+            if (errorEl) errorEl.style.display = 'block';
+            return;
+        }
+
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+
+        if (!leafletMap) initMap();
+        leafletMap.setView([lat, lon], 13, { animate: true });
+    } catch (e) {
+        console.error('Error buscando ubicación:', e);
+        if (errorEl) errorEl.style.display = 'block';
+    }
 }
 
 // ── Vuelve a la vista de lista ───────────────────────────────────────────────

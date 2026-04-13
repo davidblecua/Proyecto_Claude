@@ -373,8 +373,8 @@ async function loadInitialMachinery() {
             <div class="results-header">
                 <h2 class="mb-3">Maquinaria Disponible</h2>
                 <div class="map-view-buttons" id="viewToggleButtons" style="display:none;">
-                    <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">☰ Lista</button>
-                    <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">🗺️ Mapa</button>
+                    <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">Lista</button>
+                    <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">Mapa</button>
                 </div>
             </div>
             <div class="card-grid" id="machineryGrid"></div>
@@ -465,7 +465,7 @@ function createMachineryCard(machinery) {
             </p>
             <p class="card-text">${escHtml(machinery.description.substring(0, 100))}...</p>
             <p class="card-text">
-                <strong>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</strong>
+                <strong>${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</strong>
             </p>
             <div class="card-footer">
                 <div>
@@ -513,7 +513,7 @@ function showMachineryModal(machinery) {
         <div class="modal-dialog modal-lg">
             <div class="modal-header">
                 <h3>${escHtml(machinery.title)}</h3>
-                <button class="modal-close" onclick="document.getElementById('machineryDetailModal').remove()">✕</button>
+                <button class="modal-close" onclick="document.getElementById('machineryDetailModal').remove()">&times;</button>
             </div>
             <div class="modal-body">
                 <img src="${imgUrl}" alt="${escHtml(machinery.title)}" style="width:100%;height:220px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
@@ -531,12 +531,12 @@ function showMachineryModal(machinery) {
                 <p style="color:var(--gray-700);margin-bottom:1rem;">${escHtml(machinery.description)}</p>
 
                 <div class="detail-info-grid">
-                    <div><span class="detail-label">Ubicación</span><span>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
+                    <div><span class="detail-label">Ubicación</span><span>${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
                     <div><span class="detail-label">Precio diario</span><span><strong>${formatPrice(machinery.daily_rate)}</strong></span></div>
                     ${machinery.weekly_rate ? `<div><span class="detail-label">Precio semanal</span><span>${formatPrice(machinery.weekly_rate)}</span></div>` : ''}
                     ${machinery.monthly_rate ? `<div><span class="detail-label">Precio mensual</span><span>${formatPrice(machinery.monthly_rate)}</span></div>` : ''}
                     <div><span class="detail-label">Depósito</span><span>${formatPrice(machinery.deposit)}</span></div>
-                    <div><span class="detail-label">Entrega</span><span>${machinery.delivery_available ? '✅ Disponible' : '❌ No disponible'}</span></div>
+                    <div><span class="detail-label">Entrega</span><span>${machinery.delivery_available ? 'Disponible' : 'No disponible'}</span></div>
                 </div>
 
                 <!-- Verificar disponibilidad -->
@@ -677,8 +677,8 @@ function renderAvailabilityCalendar(availability, start, end) {
                 <span class="avail-dot avail-maint" style="margin-left:0.75rem;"></span> Mantenimiento (${counts.maintenance})
             </div>
             ${allAvailable
-                ? '<p style="color:var(--success-color);font-weight:600;margin-top:0.5rem;">✅ Todas las fechas seleccionadas están disponibles</p>'
-                : '<p style="color:var(--warning-color);margin-top:0.5rem;">⚠️ Algunas fechas no están disponibles en el rango seleccionado</p>'}
+                ? '<p style="color:var(--success-color);font-weight:600;margin-top:0.5rem;">Todas las fechas seleccionadas están disponibles</p>'
+                : '<p style="color:var(--warning-color);margin-top:0.5rem;">Algunas fechas no están disponibles en el rango seleccionado</p>'}
         </div>
     `;
 }
@@ -796,7 +796,7 @@ function renderFilterBar() {
                 Usar mi ubicacion
             </button>
             <span id="userLocStatus" style="font-size:0.82rem;color:var(--gray-600);"></span>
-            ${activeDistanceKm ? `<button class="btn-outline-sm" onclick="clearDistanceFilter()">✕ Limpiar</button>` : ''}
+            ${activeDistanceKm ? `<button class="btn-outline-sm" onclick="clearDistanceFilter()">Limpiar</button>` : ''}
         </div>
         <div id="distanceControls" style="display:${userCoordinates ? 'flex' : 'none'};align-items:center;gap:0.75rem;margin-top:0.6rem;flex-wrap:wrap;">
             <input type="range" class="distance-slider" id="distanceSlider"
@@ -1251,6 +1251,69 @@ async function sendInboxMessage(machineryId, receiverId) {
         input.disabled = false;
         input.focus();
     }
+}
+
+// ── Sección informativa de tipos de perfil ────────────────────────────────────
+
+function showProfileInfo() {
+    closeNavbar();
+    // Ocultar secciones principales
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = 'none';
+
+    const section = document.getElementById('profileInfoSection');
+    if (!section) return;
+    section.style.display = 'block';
+
+    const grid = document.getElementById('profileInfoGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+        <div class="profile-info-card profile-consumer">
+            <div class="profile-info-icon">C</div>
+            <h3 class="profile-info-title">Consumidor (Cliente)</h3>
+            <p class="profile-info-subtitle">Para empresas o particulares que necesitan alquilar maquinaria</p>
+            <ul class="profile-info-list">
+                <li class="profile-can">Buscar y filtrar maquinaria disponible</li>
+                <li class="profile-can">Ver detalles y fotos de cada máquina</li>
+                <li class="profile-can">Realizar y gestionar reservas</li>
+                <li class="profile-can">Cancelar sus propias reservas</li>
+                <li class="profile-can">Dejar valoraciones sobre las máquinas</li>
+                <li class="profile-can">Consultar su historial de alquileres</li>
+                <li class="profile-can">Contratar operarios especializados</li>
+                <li class="profile-cannot">Publicar maquinaria para alquilar</li>
+                <li class="profile-cannot">Gestionar operarios propios</li>
+                <li class="profile-cannot">Ver ingresos por alquileres</li>
+            </ul>
+            <button class="btn btn-secondary" onclick="showRegister()">Registrarse como consumidor</button>
+        </div>
+        <div class="profile-info-card profile-publisher">
+            <div class="profile-info-icon">P</div>
+            <h3 class="profile-info-title">Proveedor (Empresa / Autónomo)</h3>
+            <p class="profile-info-subtitle">Para empresas o autónomos que tienen maquinaria para alquilar</p>
+            <ul class="profile-info-list">
+                <li class="profile-can">Publicar maquinaria propia para alquilar</li>
+                <li class="profile-can">Gestionar reservas entrantes</li>
+                <li class="profile-can">Asignar y publicar operarios especializados</li>
+                <li class="profile-can">Ver ingresos y estadísticas de alquiler</li>
+                <li class="profile-can">Responder a valoraciones de clientes</li>
+                <li class="profile-can">Bloquear fechas de disponibilidad</li>
+                <li class="profile-can">Configurar precio de entrega</li>
+                <li class="profile-cannot">Realizar reservas como cliente desde el mismo perfil</li>
+                <li class="profile-cannot">Acceder al historial de alquileres como arrendatario</li>
+            </ul>
+            <button class="btn btn-primary" onclick="showRegister()">Registrarse como proveedor</button>
+        </div>`;
+
+    section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideProfileInfo() {
+    const section = document.getElementById('profileInfoSection');
+    if (section) section.style.display = 'none';
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) mainContent.style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**

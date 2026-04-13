@@ -195,15 +195,15 @@ async function showDashboard() {
             <div class="dashboard-section">
                 <h3>Acciones Rápidas</h3>
                 <div class="quick-actions">
-                    <button class="btn btn-primary" onclick="showProfile()">👤 Mi Perfil</button>
-                    <button class="btn btn-primary" onclick="showMyBookings()">📅 Mis Reservas</button>
+                    <button class="btn btn-primary" onclick="showProfile()">Mi Perfil</button>
+                    <button class="btn btn-primary" onclick="showMyBookings()">Mis Reservas</button>
                     ${isPublisher ? `
-                    <button class="btn btn-success" onclick="showMyMachinery()">🏗️ Gestionar Máquinas</button>
-                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Publicar Máquina</button>
-                    <button class="btn btn-success" onclick="showMyOperators()">👷 Mis Operarios</button>
-                    <button class="btn btn-success" onclick="showPublishOperator()">➕ Publicar Operario</button>
+                    <button class="btn btn-success" onclick="showMyMachinery()">Gestionar Máquinas</button>
+                    <button class="btn btn-success" onclick="showAddMachinery()">Publicar Máquina</button>
+                    <button class="btn btn-success" onclick="showMyOperators()">Mis Operarios</button>
+                    <button class="btn btn-success" onclick="showPublishOperator()">Publicar Operario</button>
                     ` : ''}
-                    <button class="btn btn-secondary" onclick="window.location.href='/'">🔍 Buscar Maquinaria</button>
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">Buscar Maquinaria</button>
                 </div>
             </div>
 
@@ -244,22 +244,22 @@ function renderDashboardKPIs(stats, isPublisher) {
     if (isPublisher) {
         grid.innerHTML = `
             <div class="kpi-card">
-                <div class="kpi-icon">🏗️</div>
+                <div class="kpi-icon kpi-icon-text">M</div>
                 <div class="kpi-value">${stats.total_machinery}</div>
                 <div class="kpi-label">Máquinas Publicadas</div>
             </div>
             <div class="kpi-card kpi-green">
-                <div class="kpi-icon">✅</div>
+                <div class="kpi-icon kpi-icon-text">R</div>
                 <div class="kpi-value">${stats.active_bookings}</div>
                 <div class="kpi-label">Reservas Activas</div>
             </div>
             <div class="kpi-card kpi-orange">
-                <div class="kpi-icon">⏳</div>
+                <div class="kpi-icon kpi-icon-text">P</div>
                 <div class="kpi-value">${stats.pending_bookings}</div>
                 <div class="kpi-label">Reservas Pendientes</div>
             </div>
             <div class="kpi-card kpi-blue">
-                <div class="kpi-icon">💶</div>
+                <div class="kpi-icon kpi-icon-text">€</div>
                 <div class="kpi-value">${formatPrice(stats.monthly_revenue)}</div>
                 <div class="kpi-label">Ingresos este mes</div>
             </div>
@@ -267,22 +267,22 @@ function renderDashboardKPIs(stats, isPublisher) {
     } else {
         grid.innerHTML = `
             <div class="kpi-card kpi-green">
-                <div class="kpi-icon">✅</div>
+                <div class="kpi-icon kpi-icon-text">R</div>
                 <div class="kpi-value">${stats.active_bookings}</div>
                 <div class="kpi-label">Reservas Activas</div>
             </div>
             <div class="kpi-card kpi-orange">
-                <div class="kpi-icon">⏳</div>
+                <div class="kpi-icon kpi-icon-text">P</div>
                 <div class="kpi-value">${stats.pending_bookings}</div>
                 <div class="kpi-label">Reservas Pendientes</div>
             </div>
             <div class="kpi-card kpi-blue">
-                <div class="kpi-icon">🏁</div>
+                <div class="kpi-icon kpi-icon-text">C</div>
                 <div class="kpi-value">${stats.completed_bookings}</div>
                 <div class="kpi-label">Completadas</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-icon">💶</div>
+                <div class="kpi-icon kpi-icon-text">€</div>
                 <div class="kpi-value">${formatPrice(stats.total_spent)}</div>
                 <div class="kpi-label">Total gastado</div>
             </div>
@@ -452,7 +452,6 @@ async function handleForgotPassword(event) {
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="form-container" style="text-align:center;">
-                <div style="font-size:3rem;margin-bottom:1rem;">📧</div>
                 <h2>Revisa tu correo</h2>
                 <p style="color:var(--gray-600);">${escHtml(data.message)}</p>
                 <button class="btn btn-secondary mt-3" onclick="showLogin()">← Volver al login</button>
@@ -522,8 +521,7 @@ async function handleResetPassword(event, token) {
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = `
             <div class="form-container" style="text-align:center;">
-                <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
-                <h2>¡Contraseña actualizada!</h2>
+                <h2>Contraseña actualizada</h2>
                 <p style="color:var(--gray-600);">${escHtml(data.message)}</p>
                 <button class="btn btn-primary mt-3" onclick="showLogin()">Iniciar sesión</button>
             </div>

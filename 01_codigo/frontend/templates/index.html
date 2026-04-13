@@ -15,7 +15,7 @@
     <nav class="navbar" id="mainNavbar">
         <div class="container navbar-content">
             <a href="/" class="navbar-brand">
-                🏗️ RentaMaq
+                RentaMaq
             </a>
             <button class="navbar-toggle" id="navbarToggle" onclick="toggleNavbar()" aria-label="Abrir menú">
                 <span></span><span></span><span></span>
@@ -24,6 +24,7 @@
                 <ul class="navbar-menu" id="navbarMenu">
                     <li><a href="/">Inicio</a></li>
                     <li><a href="#" onclick="showMachinery()">Maquinaria</a></li>
+                    <li><a href="#" onclick="showProfileInfo()">Tipos de perfil</a></li>
                     <li><a href="#" onclick="showLogin()">Iniciar Sesión</a></li>
                     <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
                 </ul>
@@ -55,7 +56,7 @@
         <!-- Hero Section -->
         <section class="hero">
             <div class="container">
-                <h1>🏗️ Alquila Maquinaria de Construcción</h1>
+                <h1>Alquila Maquinaria de Construcción</h1>
                 <p>La plataforma líder para alquilar y publicar maquinaria de obra en España</p>
                 <button class="btn btn-primary btn-lg" onclick="scrollToSearch()">Buscar Maquinaria</button>
                 <button class="btn btn-outline btn-lg" onclick="showRegister()">Publicar Máquina</button>
@@ -119,17 +120,18 @@
                     </div>
                     
                     <div class="form-group" style="align-self: flex-end;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 Buscar</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Buscar</button>
                     </div>
                 </form>
             </div>
         </section>
 
-        <!-- Tabs Maquinaria / Operarios -->
+        <!-- Tabs Maquinaria / Operarios / Busco Maquinaria -->
         <section class="container">
             <div class="main-tabs">
                 <button class="main-tab tab-active" id="tabMachinery" onclick="showMachineryTab()">Maquinaria</button>
                 <button class="main-tab" id="tabOperators" onclick="showOperatorsTab()">Operarios</button>
+                <button class="main-tab" id="tabRequests" onclick="showRequestsTab()">Busco Maquinaria</button>
             </div>
         </section>
 
@@ -139,8 +141,8 @@
                 <div class="results-header">
                     <h2 class="mb-3">Maquinaria Disponible</h2>
                     <div class="map-view-buttons" id="viewToggleButtons" style="display:none;">
-                        <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">☰ Lista</button>
-                        <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">🗺️ Mapa</button>
+                        <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">Lista</button>
+                        <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">Mapa</button>
                     </div>
                 </div>
                 <div class="card-grid" id="machineryGrid">
@@ -151,6 +153,18 @@
                     <p class="text-center">Cargando maquinaria...</p>
                 </div>
             </div>
+        </section>
+
+        <!-- Requests Section (Busco Maquinaria) -->
+        <section class="container" id="requestsSection" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+                <h2 style="margin:0;">Demandas de Maquinaria</h2>
+                <button class="btn btn-primary" id="btnPublishRequest" onclick="showPublishRequest()" style="display:none;">+ Publicar demanda</button>
+            </div>
+            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:1.25rem;">
+                Empresas y profesionales que buscan maquinaria para alquilar. Si eres proveedor, ponte en contacto con ellos.
+            </p>
+            <div id="requestsGrid"></div>
         </section>
 
         <!-- Operators Section -->
@@ -168,40 +182,57 @@
             <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:0.75rem;">
                 Haz clic en un marcador para ver los detalles de la máquina
             </p>
+            <!-- Barra de búsqueda de ubicación -->
+            <div class="map-search-bar" id="mapSearchBar">
+                <div class="map-search-input-wrap">
+                    <input type="text" id="mapSearchInput" class="form-control"
+                           placeholder="Busca por dirección, código postal o ciudad..."
+                           onkeydown="if(event.key==='Enter')searchMapLocation()">
+                    <button class="btn btn-secondary" onclick="searchMapLocation()">Buscar</button>
+                </div>
+                <p class="map-search-error" id="mapSearchError" style="display:none;">
+                    Ubicación no encontrada, intenta con otra búsqueda.
+                </p>
+            </div>
             <div id="leafletMap" style="height:480px;border-radius:var(--border-radius);box-shadow:var(--box-shadow);"></div>
         </section>
 
         <!-- Features Section -->
         <section class="container mt-4">
             <h2 class="text-center mb-4">¿Por qué elegir RentaMaq?</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>✅ Verificado</h3>
-                        <p>Todas las máquinas están verificadas y en buenas condiciones</p>
-                    </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#10003;</div>
+                    <h3 class="feature-title">Maquinaria verificada</h3>
+                    <p class="feature-desc">Todo el equipo publicado pasa un proceso de verificación antes de aparecer en el catálogo.</p>
                 </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>💰 Precios Competitivos</h3>
-                        <p>Ahorra hasta un 40% comparado con alquileres tradicionales</p>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9679;</div>
+                    <h3 class="feature-title">Reserva en minutos</h3>
+                    <p class="feature-desc">Encuentra la maquinaria que necesitas y confirma tu reserva en menos de 5 minutos.</p>
                 </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>🚚 Entrega Flexible</h3>
-                        <p>Entrega directa a tu obra o recogida en ubicación</p>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h3>🔒 Seguro</h3>
-                        <p>Pagos seguros y protección completa para propietarios y arrendatarios</p>
-                    </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9632;</div>
+                    <h3 class="feature-title">Soporte durante la obra</h3>
+                    <p class="feature-desc">Nuestro equipo está disponible durante todo el periodo de alquiler para resolver cualquier incidencia.</p>
                 </div>
             </div>
         </section>
     </main>
+
+    <!-- Sección de información de perfiles (oculta por defecto, se activa con showProfileInfo()) -->
+    <section class="container mt-4 mb-4" id="profileInfoSection" style="display:none;">
+        <h2 class="text-center mb-1">Tipos de perfil en RentaMaq</h2>
+        <p class="text-center mb-4" style="color:var(--gray-600);">
+            Elige el perfil que mejor se adapta a tu actividad. Puedes cambiar tu rol desde tu panel de cuenta.
+        </p>
+        <div class="profile-info-grid" id="profileInfoGrid">
+            <!-- Renderizado desde JS -->
+        </div>
+        <div class="text-center mt-3">
+            <button class="btn btn-outline" onclick="hideProfileInfo()">Volver al inicio</button>
+        </div>
+    </section>
 
     <!-- Footer -->
     <footer class="footer">
@@ -217,10 +248,12 @@
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js?v=19"></script>
+    <script src="/static/js/main.js?v=20"></script>
     <script src="/static/js/auth.js?v=9"></script>
     <script src="/static/js/search.js?v=9"></script>
-    <script src="/static/js/map.js?v=3"></script>
+    <script src="/static/js/map.js?v=4"></script>
     <script src="/static/js/operators.js?v=1"></script>
+    <script src="/static/js/requests.js?v=1"></script>
+    <script src="/static/js/reviews.js?v=1"></script>
 </body>
 </html>

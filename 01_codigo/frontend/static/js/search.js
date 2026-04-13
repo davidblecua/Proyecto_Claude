@@ -65,7 +65,7 @@ async function showMyMachinery() {
                 </div>
                 <div style="display:flex;gap:0.5rem;">
                     <button class="btn btn-secondary" onclick="showDashboard()">← Panel</button>
-                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Nueva Máquina</button>
+                    <button class="btn btn-success" onclick="showAddMachinery()">+ Nueva Máquina</button>
                 </div>
             </div>
             <div id="myMachineryGrid" class="card-grid"></div>
@@ -85,10 +85,9 @@ async function showMyMachinery() {
         } else {
             grid.innerHTML = `
                 <div style="grid-column:1/-1;text-align:center;padding:3rem;">
-                    <div style="font-size:3rem;margin-bottom:1rem;">🏗️</div>
                     <h3>No has publicado ninguna máquina aún</h3>
                     <p style="color:var(--gray-600);margin-bottom:1rem;">Empieza añadiendo tu primera máquina al catálogo</p>
-                    <button class="btn btn-success" onclick="showAddMachinery()">➕ Publicar Primera Máquina</button>
+                    <button class="btn btn-success" onclick="showAddMachinery()">Publicar Primera Máquina</button>
                 </div>`;
         }
     } catch (error) {
@@ -123,12 +122,12 @@ function createMyMachineryCard(machinery) {
         <div class="card-body">
             <h4 class="card-title">${machinery.title}</h4>
             <p style="margin:0.25rem 0;"><span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span></p>
-            <p style="font-size:0.85rem;color:var(--gray-600);margin:0.25rem 0;">📍 ${machinery.location_city}, ${machinery.location_province}</p>
+            <p style="font-size:0.85rem;color:var(--gray-600);margin:0.25rem 0;">${machinery.location_city}, ${machinery.location_province}</p>
             <p style="font-weight:600;margin:0.5rem 0;">${formatPrice(machinery.daily_rate)}/día</p>
             <div class="manage-card-actions">
-                <button class="btn btn-primary btn-sm" onclick="showEditMachineryModal(${machinery.id})">✏️ Editar</button>
-                <button class="btn btn-secondary btn-sm" onclick="showBlockDatesModal(${machinery.id}, '${machinery.title.replace(/'/g, "\\'")}')">📅 Bloquear Fechas</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteMachinery(${machinery.id})">🗑️</button>
+                <button class="btn btn-primary btn-sm" onclick="showEditMachineryModal(${machinery.id})">Editar</button>
+                <button class="btn btn-secondary btn-sm" onclick="showBlockDatesModal(${machinery.id}, '${machinery.title.replace(/'/g, "\\'")}')">Bloquear Fechas</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteMachinery(${machinery.id})">Eliminar</button>
             </div>
         </div>
     `;
@@ -154,7 +153,7 @@ async function showEditMachineryModal(machineryId) {
         <div class="modal-dialog modal-lg">
             <div class="modal-header">
                 <h3>Editar Maquinaria</h3>
-                <button class="modal-close" onclick="document.getElementById('editMachineryModal').remove()">✕</button>
+                <button class="modal-close" onclick="document.getElementById('editMachineryModal').remove()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="editMachineryForm" onsubmit="handleEditMachinery(event, ${machineryId})">
@@ -254,7 +253,7 @@ function showBlockDatesModal(machineryId, machineryTitle) {
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3>Bloquear Fechas</h3>
-                <button class="modal-close" onclick="document.getElementById('blockDatesModal').remove()">✕</button>
+                <button class="modal-close" onclick="document.getElementById('blockDatesModal').remove()">&times;</button>
             </div>
             <div class="modal-body">
                 <p style="color:var(--gray-600);margin-bottom:1rem;">${escHtml(machineryTitle)}</p>
@@ -272,8 +271,8 @@ function showBlockDatesModal(machineryId, machineryTitle) {
                     <div class="form-group">
                         <label>Razón <span class="req">*</span></label>
                         <select class="form-control" id="blockReason">
-                            <option value="maintenance">🔧 Mantenimiento</option>
-                            <option value="booked">📋 Reservado externamente</option>
+                            <option value="maintenance">Mantenimiento</option>
+                            <option value="booked">Reservado externamente</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -603,14 +602,14 @@ async function initiateBooking(machineryId) {
         <div class="modal-dialog modal-lg">
             <div class="modal-header">
                 <h3>Reservar: ${escHtml(machinery.title)}</h3>
-                <button class="modal-close" onclick="document.getElementById('bookingModal').remove()">✕</button>
+                <button class="modal-close" onclick="document.getElementById('bookingModal').remove()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="detail-info-grid" style="margin-bottom:1rem;">
                     <div><span class="detail-label">Precio diario</span><span><strong>${formatPrice(machinery.daily_rate)}</strong></span></div>
                     ${machinery.weekly_rate ? `<div><span class="detail-label">Precio semanal</span><span>${formatPrice(machinery.weekly_rate)}</span></div>` : ''}
                     <div><span class="detail-label">Depósito garantía</span><span>${formatPrice(machinery.deposit)}</span></div>
-                    <div><span class="detail-label">Ubicación</span><span>📍 ${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
+                    <div><span class="detail-label">Ubicación</span><span>${escHtml(machinery.location_city)}, ${escHtml(machinery.location_province)}</span></div>
                 </div>
 
                 <form id="bookingForm" onsubmit="submitBooking(event, ${machineryId})">
@@ -666,15 +665,18 @@ async function initiateBooking(machineryId) {
                     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
                         <button type="button" class="btn btn-secondary"
                                 onclick="document.getElementById('bookingModal').remove()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="bookSubmitBtn">✅ Confirmar Reserva</button>
+                        <button type="submit" class="btn btn-primary" id="bookSubmitBtn">Confirmar Reserva</button>
                     </div>
                 </form>
+
+                <div id="machineryReviews_${machineryId}" style="margin-top:1.5rem;border-top:1px solid var(--gray-200);padding-top:1rem;"></div>
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    loadReviews('machinery', machineryId, `machineryReviews_${machineryId}`);
 
     // Show delivery fields when checkbox is toggled
     const deliveryCb = modal.querySelector('#bookDelivery');
@@ -777,10 +779,10 @@ async function submitBooking(event, machineryId) {
             body: JSON.stringify(payload)
         });
         document.getElementById('bookingModal').remove();
-        showAlert(`✅ Reserva #${booking.id} creada. Total: ${formatPrice(booking.total_cost)}. Pendiente de confirmación.`, 'success');
+        showAlert(`Reserva #${booking.id} creada. Total: ${formatPrice(booking.total_cost)}. Pendiente de confirmación.`, 'success');
     } catch (e) {
         showAlert('Error al crear la reserva: ' + e.message, 'danger');
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✅ Confirmar Reserva'; }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Confirmar Reserva'; }
     }
 }
 
