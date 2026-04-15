@@ -5,14 +5,21 @@ Gestión de perfiles y usuarios
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pydantic import BaseModel
 from app.db.database import get_db
 from app.schemas.user import (
-    UserResponse, UserUpdate, UserListResponse, 
+    UserResponse, UserUpdate, UserListResponse,
     PasswordChange, UserUpdateRole
 )
 from app.services.user_service import UserService
 from app.core.dependencies import get_current_user, require_admin
 from app.models.user import User, UserRole
+
+VALID_LANGUAGES = {"es", "ca", "en"}
+
+
+class LanguageUpdate(BaseModel):
+    language: str
 
 router = APIRouter(prefix="/users", tags=["Usuarios"])
 
@@ -31,6 +38,24 @@ def update_my_profile(
 ):
     """Actualiza el perfil del usuario actual"""
     return UserService.update_user(db, current_user.id, user_data)
+
+
+@router.patch("/me/language", response_model=UserResponse)
+def update_my_language(
+    body: LanguageUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Actualiza el idioma preferido del usuario ('es', 'ca' o 'en')"""
+    if body.language not in VALID_LANGUAGES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Idioma no válido. Valores permitidos: {sorted(VALID_LANGUAGES)}"
+        )
+    current_user.preferred_language = body.language
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 
 @router.post("/me/change-password", response_model=UserResponse)

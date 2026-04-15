@@ -35,12 +35,14 @@ _db_module.engine = _test_engine
 _db_module.SessionLocal = _TestSessionLocal
 
 # ── 4. Registrar todos los modelos en Base.metadata ──────────────────────────
-from app.models import user as _u         # noqa: E402
-from app.models import machinery as _m    # noqa: E402
-from app.models import booking as _b      # noqa: E402
-from app.models import message as _msg    # noqa: E402
-from app.models import operator as _op    # noqa: E402
-from app.db.database import Base          # noqa: E402
+from app.models import user as _u                   # noqa: E402
+from app.models import machinery as _m              # noqa: E402
+from app.models import booking as _b                # noqa: E402
+from app.models import message as _msg              # noqa: E402
+from app.models import operator as _op              # noqa: E402
+from app.models import machinery_request as _req    # noqa: E402
+from app.models import review as _rev               # noqa: E402
+from app.db.database import Base                    # noqa: E402
 
 # ── 5. Crear tablas en SQLite ─────────────────────────────────────────────────
 Base.metadata.create_all(bind=_test_engine)

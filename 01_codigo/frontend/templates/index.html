@@ -21,12 +21,20 @@
                 <span></span><span></span><span></span>
             </button>
             <div class="navbar-menus" id="navbarMenus">
+                <!-- Selector de idioma -->
+                <div class="lang-selector" style="display:flex;align-items:center;gap:6px;margin-right:1rem;">
+                    <button class="lang-btn" data-lang="es" onclick="setLang('es')" title="Español" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;">ES</button>
+                    <span style="color:var(--gray-400);">|</span>
+                    <button class="lang-btn" data-lang="ca" onclick="setLang('ca')" title="Català" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;">CA</button>
+                    <span style="color:var(--gray-400);">|</span>
+                    <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English" style="background:none;border:none;cursor:pointer;font-size:0.85rem;padding:2px 4px;">EN</button>
+                </div>
                 <ul class="navbar-menu" id="navbarMenu">
-                    <li><a href="/">Inicio</a></li>
-                    <li><a href="#" onclick="showMachinery()">Maquinaria</a></li>
-                    <li><a href="#" onclick="showProfileInfo()">Tipos de perfil</a></li>
-                    <li><a href="#" onclick="showLogin()">Iniciar Sesión</a></li>
-                    <li><a href="#" onclick="showRegister()" class="btn btn-primary">Registrarse</a></li>
+                    <li><a href="/" data-i18n="nav_home">Inicio</a></li>
+                    <li><a href="#" onclick="showMachinery()" data-i18n="nav_machinery">Maquinaria</a></li>
+                    <li><a href="#" onclick="showProfileInfo()" data-i18n="nav_profiles">Tipos de perfil</a></li>
+                    <li><a href="#" onclick="showLogin()" data-i18n="nav_login">Iniciar Sesión</a></li>
+                    <li><a href="#" onclick="showRegister()" class="btn btn-primary" data-i18n="nav_register">Registrarse</a></li>
                 </ul>
                 <ul class="navbar-menu" id="navbarMenuAuth" style="display: none;">
                     <li>
@@ -35,17 +43,17 @@
                             <span id="navUserName"></span>
                         </a>
                     </li>
-                    <li><a href="#" onclick="showDashboard()">Mi Panel</a></li>
-                    <li><a href="#" onclick="showMyMachinery()">Mis Máquinas</a></li>
-                    <li><a href="#" onclick="showMyBookings()">Mis Reservas</a></li>
-                    <li><a href="#" onclick="showMyOperators()">Mis Operarios</a></li>
+                    <li><a href="#" onclick="showDashboard()" data-i18n="nav_dashboard">Mi Panel</a></li>
+                    <li><a href="#" onclick="showMyMachinery()" data-i18n="nav_my_machinery">Mis Máquinas</a></li>
+                    <li><a href="#" onclick="showMyBookings()" data-i18n="nav_my_bookings">Mis Reservas</a></li>
+                    <li><a href="#" onclick="showMyOperators()" data-i18n="nav_my_operators">Mis Operarios</a></li>
                     <li>
                         <a href="#" onclick="showInbox()" style="position:relative;">
-                            Mensajes
+                            <span data-i18n="nav_messages">Mensajes</span>
                             <span id="msgUnreadBadge" style="display:none;position:absolute;top:-6px;right:-10px;background:var(--danger-color);color:white;border-radius:999px;font-size:0.65rem;min-width:16px;height:16px;padding:0 3px;align-items:center;justify-content:center;font-weight:700;"></span>
                         </a>
                     </li>
-                    <li><a href="#" onclick="logout()" class="btn btn-danger">Cerrar Sesión</a></li>
+                    <li><a href="#" onclick="logout()" class="btn btn-danger" data-i18n="nav_logout">Cerrar Sesión</a></li>
                 </ul>
             </div>
         </div>
@@ -56,23 +64,23 @@
         <!-- Hero Section -->
         <section class="hero">
             <div class="container">
-                <h1>Alquila Maquinaria de Construcción</h1>
-                <p>La plataforma líder para alquilar y publicar maquinaria de obra en España</p>
-                <button class="btn btn-primary btn-lg" onclick="scrollToSearch()">Buscar Maquinaria</button>
-                <button class="btn btn-outline btn-lg" onclick="showRegister()">Publicar Máquina</button>
+                <h1 data-i18n="hero_title">Alquila Maquinaria de Construcción</h1>
+                <p data-i18n="hero_subtitle">La plataforma líder para alquilar y publicar maquinaria de obra en España</p>
+                <button class="btn btn-primary btn-lg" onclick="scrollToSearch()" data-i18n="hero_cta_search">Buscar Maquinaria</button>
+                <button class="btn btn-outline btn-lg" onclick="showRegister()" data-i18n="hero_cta_publish">Publicar Máquina</button>
             </div>
         </section>
 
         <!-- Search Box -->
         <section class="container">
             <div class="search-box" id="searchBox">
-                <h2 class="text-center mb-3">Busca la maquinaria que necesitas</h2>
+                <h2 class="text-center mb-3" data-i18n="search_title">Busca la maquinaria que necesitas</h2>
                 <form class="search-form" id="searchForm" onsubmit="searchMachinery(event)">
                     <div class="form-group">
-                        <label for="machineryType">Tipo de Máquina</label>
+                        <label for="machineryType" data-i18n="search_type_label">Tipo de Máquina</label>
                         <select class="form-control" id="machineryType">
                             <option value="">Todas</option>
-                            <optgroup label="Excavacion y movimiento">
+                            <optgroup label="Excavación y movimiento">
                                 <option value="excavadora">Excavadora</option>
                                 <option value="retroexcavadora">Retroexcavadora</option>
                                 <option value="bulldozer">Bulldozer</option>
@@ -81,24 +89,24 @@
                             <optgroup label="Carga y transporte">
                                 <option value="pala_cargadora">Pala Cargadora</option>
                                 <option value="dumper">Dumper</option>
-                                <option value="manipulador_telescopico">Manipulador Telescopico</option>
+                                <option value="manipulador_telescopico">Manipulador Telescópico</option>
                                 <option value="carretilla_elevadora">Carretilla Elevadora</option>
                                 <option value="montacargas">Montacargas</option>
                             </optgroup>
-                            <optgroup label="Compactacion">
+                            <optgroup label="Compactación">
                                 <option value="compactadora">Compactadora</option>
                             </optgroup>
-                            <optgroup label="Elevacion">
-                                <option value="grua_torre">Grua Torre</option>
-                                <option value="camion_grua">Camion Grua</option>
+                            <optgroup label="Elevación">
+                                <option value="grua_torre">Grúa Torre</option>
+                                <option value="camion_grua">Camión Grúa</option>
                                 <option value="plataforma_elevadora">Plataforma Elevadora</option>
                             </optgroup>
-                            <optgroup label="Hormigon">
+                            <optgroup label="Hormigón">
                                 <option value="hormigonera">Hormigonera</option>
-                                <option value="bomba_hormigon">Bomba de Hormigon</option>
+                                <option value="bomba_hormigon">Bomba de Hormigón</option>
                             </optgroup>
-                            <optgroup label="Demolicion y corte">
-                                <option value="martillo_hidraulico">Martillo Hidraulico</option>
+                            <optgroup label="Demolición y corte">
+                                <option value="martillo_hidraulico">Martillo Hidráulico</option>
                                 <option value="cortadora_asfalto">Cortadora de Asfalto</option>
                             </optgroup>
                             <optgroup label="Equipos auxiliares">
@@ -110,17 +118,17 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="locationCity">Ciudad</label>
+                        <label for="locationCity" data-i18n="search_city_label">Ciudad</label>
                         <input type="text" class="form-control" id="locationCity" placeholder="Madrid, Barcelona...">
                     </div>
-                    
+
                     <div class="form-group">
-                        <label for="maxPrice">Precio Máximo/día (€)</label>
+                        <label for="maxPrice" data-i18n="search_price_label">Precio Máximo/día (€)</label>
                         <input type="number" class="form-control" id="maxPrice" placeholder="500">
                     </div>
-                    
+
                     <div class="form-group" style="align-self: flex-end;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Buscar</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;" data-i18n="search_btn">Buscar</button>
                     </div>
                 </form>
             </div>
@@ -129,9 +137,9 @@
         <!-- Tabs Maquinaria / Operarios / Busco Maquinaria -->
         <section class="container">
             <div class="main-tabs">
-                <button class="main-tab tab-active" id="tabMachinery" onclick="showMachineryTab()">Maquinaria</button>
-                <button class="main-tab" id="tabOperators" onclick="showOperatorsTab()">Operarios</button>
-                <button class="main-tab" id="tabRequests" onclick="showRequestsTab()">Busco Maquinaria</button>
+                <button class="main-tab tab-active" id="tabMachinery" onclick="showMachineryTab()" data-i18n="tab_machinery">Maquinaria</button>
+                <button class="main-tab" id="tabOperators" onclick="showOperatorsTab()" data-i18n="tab_operators">Operarios</button>
+                <button class="main-tab" id="tabRequests" onclick="showRequestsTab()" data-i18n="tab_requests">Busco Maquinaria</button>
             </div>
         </section>
 
@@ -139,7 +147,7 @@
         <section class="container" id="machinerySection">
             <div id="machineryResults">
                 <div class="results-header">
-                    <h2 class="mb-3">Maquinaria Disponible</h2>
+                    <h2 class="mb-3" data-i18n="machinery_available">Maquinaria Disponible</h2>
                     <div class="map-view-buttons" id="viewToggleButtons" style="display:none;">
                         <button class="btn-view active" id="btnListView" onclick="switchToListView()" title="Vista lista">Lista</button>
                         <button class="btn-view" id="btnMapView" onclick="switchToMapViewFromList()" title="Vista mapa">Mapa</button>
@@ -158,10 +166,10 @@
         <!-- Requests Section (Busco Maquinaria) -->
         <section class="container" id="requestsSection" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
-                <h2 style="margin:0;">Demandas de Maquinaria</h2>
+                <h2 style="margin:0;" data-i18n="requests_title">Demandas de Maquinaria</h2>
                 <button class="btn btn-primary" id="btnPublishRequest" onclick="showPublishRequest()" style="display:none;">+ Publicar demanda</button>
             </div>
-            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:1.25rem;">
+            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:1.25rem;" data-i18n="requests_desc">
                 Empresas y profesionales que buscan maquinaria para alquilar. Si eres proveedor, ponte en contacto con ellos.
             </p>
             <div id="requestsGrid"></div>
@@ -170,7 +178,7 @@
         <!-- Operators Section -->
         <section class="container" id="operatorsSection" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
-                <h2 style="margin:0;">Operarios Disponibles</h2>
+                <h2 style="margin:0;" data-i18n="operators_title">Operarios Disponibles</h2>
                 <button class="btn btn-success" id="btnPublishOperator" onclick="showPublishOperator()" style="display:none;">+ Publicar Operario</button>
             </div>
             <div class="card-grid" id="operatorsGrid"></div>
@@ -178,8 +186,8 @@
 
         <!-- Mapa siempre visible, sin necesidad de login -->
         <section class="container mt-2 mb-4" id="permanentMapSection">
-            <h2 class="mb-1">Mapa de Maquinaria</h2>
-            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:0.75rem;">
+            <h2 class="mb-1" data-i18n="map_title">Mapa de Maquinaria</h2>
+            <p style="color:var(--gray-600);font-size:0.92rem;margin-bottom:0.75rem;" data-i18n="map_subtitle">
                 Haz clic en un marcador para ver los detalles de la máquina
             </p>
             <!-- Barra de búsqueda de ubicación -->
@@ -187,10 +195,11 @@
                 <div class="map-search-input-wrap">
                     <input type="text" id="mapSearchInput" class="form-control"
                            placeholder="Busca por dirección, código postal o ciudad..."
+                           data-i18n-placeholder="map_search_placeholder"
                            onkeydown="if(event.key==='Enter')searchMapLocation()">
-                    <button class="btn btn-secondary" onclick="searchMapLocation()">Buscar</button>
+                    <button class="btn btn-secondary" onclick="searchMapLocation()" data-i18n="map_search_btn">Buscar</button>
                 </div>
-                <p class="map-search-error" id="mapSearchError" style="display:none;">
+                <p class="map-search-error" id="mapSearchError" style="display:none;" data-i18n="map_search_error">
                     Ubicación no encontrada, intenta con otra búsqueda.
                 </p>
             </div>
@@ -199,22 +208,22 @@
 
         <!-- Features Section -->
         <section class="container mt-4">
-            <h2 class="text-center mb-4">¿Por qué elegir RentaMaq?</h2>
+            <h2 class="text-center mb-4" data-i18n="features_title">¿Por qué elegir RentaMaq?</h2>
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">&#10003;</div>
-                    <h3 class="feature-title">Maquinaria verificada</h3>
-                    <p class="feature-desc">Todo el equipo publicado pasa un proceso de verificación antes de aparecer en el catálogo.</p>
+                    <h3 class="feature-title" data-i18n="feature1_title">Maquinaria verificada</h3>
+                    <p class="feature-desc" data-i18n="feature1_desc">Todo el equipo publicado pasa un proceso de verificación antes de aparecer en el catálogo.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9679;</div>
-                    <h3 class="feature-title">Reserva en minutos</h3>
-                    <p class="feature-desc">Encuentra la maquinaria que necesitas y confirma tu reserva en menos de 5 minutos.</p>
+                    <h3 class="feature-title" data-i18n="feature2_title">Reserva en minutos</h3>
+                    <p class="feature-desc" data-i18n="feature2_desc">Encuentra la maquinaria que necesitas y confirma tu reserva en menos de 5 minutos.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9632;</div>
-                    <h3 class="feature-title">Soporte durante la obra</h3>
-                    <p class="feature-desc">Nuestro equipo está disponible durante todo el periodo de alquiler para resolver cualquier incidencia.</p>
+                    <h3 class="feature-title" data-i18n="feature3_title">Soporte durante la obra</h3>
+                    <p class="feature-desc" data-i18n="feature3_desc">Nuestro equipo está disponible durante todo el período de alquiler para resolver cualquier incidencia.</p>
                 </div>
             </div>
         </section>
@@ -222,37 +231,38 @@
 
     <!-- Sección de información de perfiles (oculta por defecto, se activa con showProfileInfo()) -->
     <section class="container mt-4 mb-4" id="profileInfoSection" style="display:none;">
-        <h2 class="text-center mb-1">Tipos de perfil en RentaMaq</h2>
-        <p class="text-center mb-4" style="color:var(--gray-600);">
+        <h2 class="text-center mb-1" data-i18n="profile_types_title">Tipos de perfil en RentaMaq</h2>
+        <p class="text-center mb-4" style="color:var(--gray-600);" data-i18n="profile_types_subtitle">
             Elige el perfil que mejor se adapta a tu actividad. Puedes cambiar tu rol desde tu panel de cuenta.
         </p>
         <div class="profile-info-grid" id="profileInfoGrid">
             <!-- Renderizado desde JS -->
         </div>
         <div class="text-center mt-3">
-            <button class="btn btn-outline" onclick="hideProfileInfo()">Volver al inicio</button>
+            <button class="btn btn-outline" onclick="hideProfileInfo()" data-i18n="profile_back">Volver al inicio</button>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 RentaMaq - Plataforma de Alquiler de Maquinaria</p>
+            <p data-i18n="footer_copy">&copy; 2024 RentaMaq - Plataforma de Alquiler de Maquinaria</p>
             <p>
-                <a href="/docs" style="color: white; margin: 0 10px;">Documentación API</a> |
-                <a href="#" style="color: white; margin: 0 10px;">Términos</a> |
-                <a href="#" style="color: white; margin: 0 10px;">Privacidad</a> |
-                <a href="#" style="color: white; margin: 0 10px;">Contacto</a>
+                <a href="/docs" style="color: white; margin: 0 10px;" data-i18n="footer_docs">Documentación API</a> |
+                <a href="#" style="color: white; margin: 0 10px;" data-i18n="footer_terms">Términos</a> |
+                <a href="#" style="color: white; margin: 0 10px;" data-i18n="footer_privacy">Privacidad</a> |
+                <a href="#" style="color: white; margin: 0 10px;" data-i18n="footer_contact">Contacto</a>
             </p>
         </div>
     </footer>
 
     <!-- JavaScript -->
-    <script src="/static/js/main.js?v=20"></script>
+    <script src="/static/js/i18n.js?v=1"></script>
+    <script src="/static/js/main.js?v=21"></script>
     <script src="/static/js/auth.js?v=9"></script>
     <script src="/static/js/search.js?v=9"></script>
     <script src="/static/js/map.js?v=4"></script>
-    <script src="/static/js/operators.js?v=1"></script>
+    <script src="/static/js/operators.js?v=2"></script>
     <script src="/static/js/requests.js?v=1"></script>
     <script src="/static/js/reviews.js?v=1"></script>
 </body>

@@ -58,9 +58,10 @@ class UserResponse(UserBase):
     role: UserRole
     is_active: bool
     is_verified: bool
+    preferred_language: str = 'es'
     created_at: datetime
     last_login: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True  # Permite crear desde modelos ORM
 

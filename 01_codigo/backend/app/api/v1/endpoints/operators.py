@@ -33,7 +33,7 @@ def _to_response(op: Operator) -> OperatorResponse:
     )
 
 
-# ── Busqueda publica ──────────────────────────────────────────────────────────
+# ── Búsqueda pública ──────────────────────────────────────────────────────────
 
 @router.get("/search", response_model=List[OperatorResponse])
 def search_operators(

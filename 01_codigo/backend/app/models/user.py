@@ -38,6 +38,9 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     
+    # Preferencia de idioma: 'es' | 'ca' | 'en'
+    preferred_language = Column(String(2), nullable=False, default='es', server_default='es')
+
     # Información adicional
     phone = Column(String(20), nullable=True)
     company_name = Column(String(255), nullable=True)

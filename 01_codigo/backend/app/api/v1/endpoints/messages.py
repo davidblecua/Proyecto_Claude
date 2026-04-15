@@ -143,7 +143,7 @@ def get_machine_conversations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Conversaciones recibidas sobre una maquina (vista propietario)"""
+    """Conversaciones recibidas sobre una máquina (vista propietario)"""
     machinery = db.query(Machinery).filter(Machinery.id == machinery_id).first()
     if not machinery:
         raise HTTPException(status_code=404, detail="Maquinaria no encontrada")

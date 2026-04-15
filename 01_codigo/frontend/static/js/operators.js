@@ -1,6 +1,6 @@
 /**
  * RentaMaq - Operarios
- * Gestion de operarios: listado publico, publicacion, reservas
+ * Gestión de operarios: listado público, publicación, reservas
  */
 
 let currentOperatorsList = [];
@@ -13,9 +13,9 @@ const OPERATOR_SKILL_LABELS = {
     'dumper': 'Dumper',
     'pala_cargadora': 'Pala Cargadora',
     'hormigonera': 'Hormigonera',
-    'camion_grua': 'Camion Grua',
-    'grua_torre': 'Grua Torre',
-    'manipulador_telescopico': 'Manipulador Telescopico',
+    'camion_grua': 'Camión Grúa',
+    'grua_torre': 'Grúa Torre',
+    'manipulador_telescopico': 'Manipulador Telescópico',
     'plataforma_elevadora': 'Plataforma Elevadora',
     'carretilla_elevadora': 'Carretilla Elevadora',
     'compactadora': 'Compactadora',
@@ -45,7 +45,7 @@ function showOperatorsTab() {
     const section = document.getElementById('operatorsSection');
     section.style.display = '';
 
-    // Renderizar busqueda si aun no esta
+    // Renderizar búsqueda si aún no está
     if (!document.getElementById('operatorsSearchBox')) {
         renderOperatorsSearchBox();
     }
@@ -105,13 +105,13 @@ function createOperatorCard(op) {
             <div class="operator-card-info">
                 <h3 class="operator-name">${escHtml(op.name)}</h3>
                 <p class="operator-location">
-                    <span>Ubicacion:</span> ${escHtml(op.location_city)}, ${escHtml(op.location_province)}
+                    <span>Ubicación:</span> ${escHtml(op.location_city)}, ${escHtml(op.location_province)}
                 </p>
                 ${experience ? `<p class="operator-exp">${experience}</p>` : ''}
             </div>
             <div class="operator-rate">
                 <strong>${formatPrice(op.daily_rate)}</strong>
-                <span>/dia</span>
+                <span>/día</span>
             </div>
         </div>
         <div class="operator-skills">${skills || '<span style="color:var(--gray-500);font-size:0.82rem;">Sin especialidades indicadas</span>'}</div>
@@ -132,7 +132,7 @@ function escHtml(str) {
         .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ── Busqueda de operarios ─────────────────────────────────────────────────────
+// ── Búsqueda de operarios ─────────────────────────────────────────────────────
 
 function renderOperatorsSearchBox() {
     const section = document.getElementById('operatorsSection');
@@ -159,7 +159,7 @@ function renderOperatorsSearchBox() {
                 <input type="text" class="form-control" id="opCity" placeholder="Madrid, Barcelona...">
             </div>
             <div class="form-group">
-                <label for="opMaxPrice">Precio max/dia (euros)</label>
+                <label for="opMaxPrice">Precio max/día (euros)</label>
                 <input type="number" class="form-control" id="opMaxPrice" placeholder="200">
             </div>
             <div class="form-group" style="align-self:flex-end;">
@@ -259,10 +259,10 @@ async function showOperatorModal(operatorId) {
                                 : '<span class="badge badge-warning">No disponible</span>'}
                         </div>
                         <div class="detail-info-grid" style="margin-top:0.5rem;">
-                            <div><span class="detail-label">Ubicacion</span><span>${escHtml(op.location_city)}, ${escHtml(op.location_province)}</span></div>
+                            <div><span class="detail-label">Ubicación</span><span>${escHtml(op.location_city)}, ${escHtml(op.location_province)}</span></div>
                             <div><span class="detail-label">Tarifa diaria</span><span><strong>${formatPrice(op.daily_rate)}</strong></span></div>
                             ${op.experience_years != null ? `<div><span class="detail-label">Experiencia</span><span>${op.experience_years} ano${op.experience_years !== 1 ? 's' : ''}</span></div>` : ''}
-                            ${op.phone ? `<div><span class="detail-label">Telefono</span><span>${escHtml(op.phone)}</span></div>` : ''}
+                            ${op.phone ? `<div><span class="detail-label">Teléfono</span><span>${escHtml(op.phone)}</span></div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -309,7 +309,7 @@ async function showOperatorModal(operatorId) {
                     </button>
                 </div>` : !appState.isAuthenticated ? `
                 <div class="alert alert-info" style="margin-top:1rem;">
-                    <a href="#" onclick="closeOperatorModal();showLogin()">Inicia sesion</a> para reservar este operario.
+                    <a href="#" onclick="closeOperatorModal();showLogin()">Inicia sesión</a> para reservar este operario.
                 </div>` : `
                 <div class="alert alert-warning" style="margin-top:1rem;">Este operario no esta disponible actualmente.</div>`}
 
@@ -517,12 +517,12 @@ function showPublishOperator() {
                             <input type="text" class="form-control" id="opName" required minlength="2" maxlength="255">
                         </div>
                         <div class="form-group">
-                            <label>Telefono</label>
+                            <label>Teléfono</label>
                             <input type="text" class="form-control" id="opPhone" maxlength="20">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Descripcion / Experiencia</label>
+                        <label>Descripción / Experiencia</label>
                         <textarea class="form-control" id="opDescription" rows="3" maxlength="2000" placeholder="Describe la experiencia, certificaciones, disponibilidad..."></textarea>
                     </div>
                     <div class="form-row-3">
@@ -639,12 +639,12 @@ async function showEditOperatorModal(opId) {
                             <input type="text" class="form-control" id="editOpName" value="${escHtml(op.name)}" required minlength="2">
                         </div>
                         <div class="form-group">
-                            <label>Telefono</label>
+                            <label>Teléfono</label>
                             <input type="text" class="form-control" id="editOpPhone" value="${escHtml(op.phone || '')}">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Descripcion</label>
+                        <label>Descripción</label>
                         <textarea class="form-control" id="editOpDesc" rows="3">${escHtml(op.description || '')}</textarea>
                     </div>
                     <div class="form-row-3">
@@ -729,7 +729,7 @@ async function showMyOperatorBookings() {
     try {
         const data = await apiRequest('/operators/bookings/my');
         if (!data || data.length === 0) {
-            container.innerHTML = '<p style="color:var(--gray-600);">No tienes reservas de operarios todavia.</p>';
+            container.innerHTML = '<p style="color:var(--gray-600);">No tienes reservas de operarios todavía.</p>';
             return;
         }
         container.innerHTML = data.map(b => `

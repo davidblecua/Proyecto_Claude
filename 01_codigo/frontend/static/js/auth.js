@@ -61,7 +61,12 @@ async function handleLogin(event) {
         appState.authToken = data.access_token;
         appState.currentUser = data.user;
         appState.isAuthenticated = true;
-        
+
+        // Sincronizar idioma desde el perfil del usuario
+        if (data.user.preferred_language && typeof setLang === 'function') {
+            setLang(data.user.preferred_language);
+        }
+
         updateNavbarForAuthenticatedUser();
         showAlert('¡Bienvenido, ' + data.user.full_name + '!', 'success');
         
@@ -370,12 +375,42 @@ function showProfile() {
                 <span class="profile-info-label">Rol</span>
                 <span class="profile-info-value">${translateRole(user.role)}</span>
             </div>
+            <div class="profile-info-row" style="align-items:center;">
+                <span class="profile-info-label">Idioma</span>
+                <span class="profile-info-value">
+                    <select id="profileLangSelect" class="form-control" style="max-width:140px;display:inline-block;"
+                            onchange="saveProfileLanguage(this.value)">
+                        <option value="es" ${(user.preferred_language||'es')==='es'?'selected':''}>Español</option>
+                        <option value="ca" ${(user.preferred_language||'es')==='ca'?'selected':''}>Català</option>
+                        <option value="en" ${(user.preferred_language||'es')==='en'?'selected':''}>English</option>
+                    </select>
+                </span>
+            </div>
 
             <div style="margin-top:2rem;">
                 <button class="btn btn-primary" onclick="showDashboard()">Volver al Panel</button>
             </div>
         </div>
     `;
+}
+
+/**
+ * Guarda el idioma preferido del usuario en el backend y actualiza la UI.
+ */
+async function saveProfileLanguage(lang) {
+    try {
+        const updated = await apiRequest('/users/me/language', {
+            method: 'PATCH',
+            body: JSON.stringify({ language: lang }),
+        });
+        // Actualizar estado local
+        appState.currentUser.preferred_language = lang;
+        localStorage.setItem('current_user', JSON.stringify(appState.currentUser));
+        if (typeof setLang === 'function') setLang(lang);
+        showAlert('Idioma actualizado', 'success');
+    } catch (e) {
+        showAlert('No se pudo guardar el idioma: ' + e.message, 'danger');
+    }
 }
 
 /**

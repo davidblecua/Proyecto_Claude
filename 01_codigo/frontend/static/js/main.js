@@ -81,6 +81,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('current_user', JSON.stringify(user));
                 appState.currentUser = user;
                 appState.isAuthenticated = true;
+                if (user.preferred_language && typeof setLang === 'function') {
+                    setLang(user.preferred_language);
+                }
                 updateNavbarForAuthenticatedUser();
                 showAlert('¡Bienvenido, ' + user.full_name + '!', 'success');
                 showDashboard();
@@ -131,8 +134,13 @@ function checkAuthentication() {
     
     if (token && user) {
         appState.authToken = token;
-        appState.currentUser = JSON.parse(user);
+        const parsedUser = JSON.parse(user);
+        appState.currentUser = parsedUser;
         appState.isAuthenticated = true;
+        // Restaurar idioma preferido desde el perfil guardado
+        if (parsedUser.preferred_language && typeof setLang === 'function') {
+            setLang(parsedUser.preferred_language);
+        }
         updateNavbarForAuthenticatedUser();
     }
 }
@@ -322,16 +330,16 @@ function translateMachineryType(type) {
         'motoniveladora': 'Motoniveladora',
         'pala_cargadora': 'Pala Cargadora',
         'dumper': 'Dumper',
-        'manipulador_telescopico': 'Manipulador Telescopico',
+        'manipulador_telescopico': 'Manipulador Telescópico',
         'carretilla_elevadora': 'Carretilla Elevadora',
         'montacargas': 'Montacargas',
         'compactadora': 'Compactadora',
-        'grua_torre': 'Grua Torre',
-        'camion_grua': 'Camion Grua',
+        'grua_torre': 'Grúa Torre',
+        'camion_grua': 'Camión Grúa',
         'plataforma_elevadora': 'Plataforma Elevadora',
         'hormigonera': 'Hormigonera',
-        'bomba_hormigon': 'Bomba de Hormigon',
-        'martillo_hidraulico': 'Martillo Hidraulico',
+        'bomba_hormigon': 'Bomba de Hormigón',
+        'martillo_hidraulico': 'Martillo Hidráulico',
         'cortadora_asfalto': 'Cortadora de Asfalto',
         'compresor': 'Compresor',
         'generador': 'Generador',
@@ -559,11 +567,11 @@ function showMachineryModal(machinery) {
                 <!-- Chat con el propietario / Consultas recibidas -->
                 ${!appState.isAuthenticated ? `
                 <div class="alert alert-info" style="margin-top:1rem;margin-bottom:0;">
-                    <a href="#" onclick="closeMachineryModal();showLogin()">Inicia sesion</a> para contactar al propietario
+                    <a href="#" onclick="closeMachineryModal();showLogin()">Inicia sesión</a> para contactar al propietario
                 </div>` : appState.currentUser.id === machinery.owner_id ? `
                 <div class="chat-section" id="chatSection_${machinery.id}">
                     <div class="chat-header">
-                        <span>Consultas recibidas sobre esta maquina</span>
+                        <span>Consultas recibidas sobre esta máquina</span>
                     </div>
                     <div id="ownerInquiries_${machinery.id}" style="padding:0.75rem;max-height:220px;overflow-y:auto;">
                         <div style="text-align:center;color:var(--gray-500);font-size:0.85rem;">Cargando...</div>
@@ -708,7 +716,7 @@ function closeNavbar() {
 
 const MACHINERY_TYPES = [
     ['', 'Todas'],
-    // Excavacion y movimiento de tierras
+    // Excavación y movimiento de tierras
     ['excavadora', 'Excavadora'],
     ['retroexcavadora', 'Retroexcavadora'],
     ['bulldozer', 'Bulldozer'],
@@ -716,20 +724,20 @@ const MACHINERY_TYPES = [
     // Carga y transporte
     ['pala_cargadora', 'Pala Cargadora'],
     ['dumper', 'Dumper'],
-    ['manipulador_telescopico', 'Manipulador Telescopico'],
+    ['manipulador_telescopico', 'Manipulador Telescópico'],
     ['carretilla_elevadora', 'Carretilla Elevadora'],
     ['montacargas', 'Montacargas'],
-    // Compactacion
+    // Compactación
     ['compactadora', 'Compactadora'],
-    // Elevacion
-    ['grua_torre', 'Grua Torre'],
-    ['camion_grua', 'Camion Grua'],
+    // Elevación
+    ['grua_torre', 'Grúa Torre'],
+    ['camion_grua', 'Camión Grúa'],
     ['plataforma_elevadora', 'Plataforma Elevadora'],
-    // Hormigon
+    // Hormigón
     ['hormigonera', 'Hormigonera'],
-    ['bomba_hormigon', 'Bomba de Hormigon'],
-    // Demolicion y corte
-    ['martillo_hidraulico', 'Martillo Hidraulico'],
+    ['bomba_hormigon', 'Bomba de Hormigón'],
+    // Demolición y corte
+    ['martillo_hidraulico', 'Martillo Hidráulico'],
     ['cortadora_asfalto', 'Cortadora de Asfalto'],
     // Auxiliares
     ['compresor', 'Compresor'],
@@ -761,7 +769,7 @@ function renderFilterBar() {
     bar.className = 'public-filter-bar';
     bar.innerHTML = `
         <div class="filter-section">
-            <span class="filter-section-label">Filtrar por tipo de maquina</span>
+            <span class="filter-section-label">Filtrar por tipo de máquina</span>
             <div class="filter-chips" id="typeFilterChips">${chipsHtml}</div>
         </div>
         <div class="filter-section">
@@ -786,14 +794,14 @@ function renderFilterBar() {
         </div>
     `;
 
-    // Seccion de distancia (siempre visible)
+    // Sección de distancia (siempre visible)
     const distSection = document.createElement('div');
     distSection.className = 'filter-section';
     distSection.innerHTML = `
         <span class="filter-section-label">Filtrar por distancia</span>
         <div class="filter-distance-top">
             <button class="btn btn-secondary btn-sm" id="locBtn" onclick="requestUserLocation()">
-                Usar mi ubicacion
+                Usar mi ubicación
             </button>
             <span id="userLocStatus" style="font-size:0.82rem;color:var(--gray-600);"></span>
             ${activeDistanceKm ? `<button class="btn-outline-sm" onclick="clearDistanceFilter()">Limpiar</button>` : ''}
@@ -868,12 +876,12 @@ function requestUserLocation() {
             const controls = document.getElementById('distanceControls');
             const statusEl = document.getElementById('userLocStatus');
             if (controls) controls.style.display = 'flex';
-            if (statusEl) statusEl.textContent = `Ubicacion detectada (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`;
+            if (statusEl) statusEl.textContent = `Ubicación detectada (${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)})`;
             applyDistanceFilter(100);
         },
         () => {
-            showAlert('No se pudo obtener tu ubicacion. Activa el permiso en el navegador.', 'warning');
-            if (btn) btn.textContent = 'Usar mi ubicacion';
+            showAlert('No se pudo obtener tu ubicación. Activa el permiso en el navegador.', 'warning');
+            if (btn) btn.textContent = 'Usar mi ubicación';
         }
     );
 }
@@ -886,7 +894,7 @@ function applyDistanceFilter(km) {
     renderMachinery(filtered);
 
     const statusEl = document.getElementById('distanceStatus');
-    if (statusEl) statusEl.textContent = `${filtered.length} maquina${filtered.length !== 1 ? 's' : ''} en ${km} km`;
+    if (statusEl) statusEl.textContent = `${filtered.length} máquina${filtered.length !== 1 ? 's' : ''} en ${km} km`;
 }
 
 function clearDistanceFilter() {
@@ -959,7 +967,7 @@ async function applyDateFilter() {
     if (statusEl) {
         statusEl.innerHTML = `
             <span style="color:var(--success-color);font-weight:600;">
-                ${availCount} maquina${availCount !== 1 ? 's' : ''} disponible${availCount !== 1 ? 's' : ''}
+                ${availCount} máquina${availCount !== 1 ? 's' : ''} disponible${availCount !== 1 ? 's' : ''}
                 para ${formatDateShort(start)} - ${formatDateShort(end)}
             </span>`;
     }
@@ -1104,7 +1112,7 @@ async function loadOwnerInquiries(machineryId) {
     try {
         const convs = await apiRequest(`/messages/machine/${machineryId}/conversations`);
         if (!convs || convs.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--gray-500);font-size:0.85rem;padding:0.5rem;">Nadie ha enviado consultas sobre esta maquina todavia.</p>';
+            container.innerHTML = '<p style="text-align:center;color:var(--gray-500);font-size:0.85rem;padding:0.5rem;">Nadie ha enviado consultas sobre esta máquina todavía.</p>';
             return;
         }
         container.innerHTML = convs.map(c => `
