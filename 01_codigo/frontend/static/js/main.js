@@ -41,6 +41,14 @@ const appState = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('RentaMaq iniciado');
 
+    // Barra de entorno
+    const banner = document.getElementById('envBanner');
+    if (banner) {
+        const cls = document.body.className;
+        if (cls.includes('env-dev')) banner.textContent = 'ENTORNO DE DESARROLLO — localhost:8080';
+        if (cls.includes('env-pre')) banner.textContent = 'PREPRODUCCIÓN DEMO — localhost:8001';
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
 
     // Capturar token de recuperación de contraseña si viene en la URL

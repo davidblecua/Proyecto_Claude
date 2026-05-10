@@ -1,0 +1,13 @@
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+echo "=== Estado de entornos RentaMaq ==="
+echo ""
+echo "--- DEV (puerto 8080, sin Docker) ---"
+curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8080/health 2>/dev/null || echo "No responde"
+echo ""
+echo "--- PRE (puerto 8001) ---"
+docker compose -f docker-compose.pre.yml ps 2>/dev/null || echo "Docker no disponible"
+echo ""
+echo "--- PRO (puerto 8002) ---"
+docker compose -f docker-compose.pro.yml ps 2>/dev/null || echo "Docker no disponible"

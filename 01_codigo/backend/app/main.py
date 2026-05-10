@@ -83,7 +83,10 @@ async def root():
     
     if html_path.exists():
         with open(html_path, "r", encoding="utf-8") as f:
-            return f.read()
+            content = f.read()
+        env = settings.APP_ENV
+        content = content.replace("<body>", f'<body class="env-{env}">', 1)
+        return content
     
     return """
     <html>

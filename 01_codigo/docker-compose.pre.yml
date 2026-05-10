@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: rentamaq_db_pre
+    environment:
+      POSTGRES_USER: rentamaq_pre
+      POSTGRES_PASSWORD: pre_password
+      POSTGRES_DB: rentamaq_pre
+    ports:
+      - "5433:5432"
+    volumes:
+      - rentamaq_pre_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rentamaq_pre -d rentamaq_pre"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: rentamaq_app_pre
+    env_file: backend/.env.pre
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  rentamaq_pre_data:
