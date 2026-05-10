@@ -163,7 +163,7 @@ function updateNavbarForAuthenticatedUser() {
             navUserName.textContent = appState.currentUser.full_name.split(' ')[0];
         }
         updateUnreadBadge();
-        // Mostrar boton de publicar operario si esta en la seccion de operarios
+        // Mostrar botón de publicar operario si está en la sección de operarios
         const btnPubOp = document.getElementById('btnPublishOperator');
         if (btnPubOp) btnPubOp.style.display = '';
     } else {
@@ -816,7 +816,7 @@ function renderFilterBar() {
     `;
     bar.appendChild(distSection);
 
-    // Insertar antes del grid (despues del results-header)
+    // Insertar antes del grid (después del results-header)
     machineryResults.insertBefore(bar, grid);
 }
 
@@ -1057,7 +1057,7 @@ function renderChatMessages(msgs, machineryId) {
             </div>`;
     }).join('');
 
-    // Scroll al ultimo mensaje
+    // Scroll al último mensaje
     container.scrollTop = container.scrollHeight;
 }
 
