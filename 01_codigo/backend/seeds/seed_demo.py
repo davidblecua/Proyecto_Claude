@@ -19,66 +19,58 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# ── Fotos Picsum por tipo de maquinaria (3-5 URLs por máquina) ───────────────
-# IDs de Picsum que muestran imágenes de construcción / maquinaria industrial
-PHOTOS = {
-    "excavadora":             [
-        "https://picsum.photos/seed/exc1/800/500",
-        "https://picsum.photos/seed/exc2/800/500",
-        "https://picsum.photos/seed/exc3/800/500",
+# Directorio static del frontend (para guardar las fotos descargadas)
+_FRONTEND_STATIC = Path(__file__).resolve().parent.parent.parent / "frontend" / "static"
+
+# ── Fotos reales de Wikimedia Commons por tipo de maquinaria ─────────────────
+# Licencia libre; se descargan localmente al ejecutar el seed.
+WIKIMEDIA_PHOTOS: dict[str, list[tuple[str, str]]] = {
+    "excavadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/a/a2/Caterpillar_320.jpg",          "exc_1.jpg"),
     ],
-    "retroexcavadora":        [
-        "https://picsum.photos/seed/ret1/800/500",
-        "https://picsum.photos/seed/ret2/800/500",
-        "https://picsum.photos/seed/ret3/800/500",
+    "retroexcavadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/f/f5/JCB_3CX_backhoe_loader.JPG",  "ret_1.jpg"),
     ],
-    "plataforma_elevadora":   [
-        "https://picsum.photos/seed/plat1/800/500",
-        "https://picsum.photos/seed/plat2/800/500",
-        "https://picsum.photos/seed/plat3/800/500",
+    "plataforma_elevadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/e/ed/Articulated_boom_lift_%2820240319%29.jpg", "plat_1.jpg"),
     ],
-    "grua_torre":             [
-        "https://picsum.photos/seed/grua1/800/500",
-        "https://picsum.photos/seed/grua2/800/500",
-        "https://picsum.photos/seed/grua3/800/500",
-        "https://picsum.photos/seed/grua4/800/500",
+    "grua_torre": [
+        ("https://upload.wikimedia.org/wikipedia/commons/3/30/Potain_tower_crane%2C_France.jpg", "grua_1.jpg"),
     ],
-    "dumper":                 [
-        "https://picsum.photos/seed/dump1/800/500",
-        "https://picsum.photos/seed/dump2/800/500",
-        "https://picsum.photos/seed/dump3/800/500",
+    "dumper": [
+        ("https://upload.wikimedia.org/wikipedia/commons/3/31/AUSA_dumper_2.jpg",            "dump_1.jpg"),
     ],
-    "manipulador_telescopico":[
-        "https://picsum.photos/seed/mani1/800/500",
-        "https://picsum.photos/seed/mani2/800/500",
-        "https://picsum.photos/seed/mani3/800/500",
+    "manipulador_telescopico": [
+        ("https://upload.wikimedia.org/wikipedia/commons/b/b5/MERLO_Panoramic_Telescopic_handler_pic3.JPG", "mani_1.jpg"),
     ],
-    "compactadora":           [
-        "https://picsum.photos/seed/comp1/800/500",
-        "https://picsum.photos/seed/comp2/800/500",
-        "https://picsum.photos/seed/comp3/800/500",
+    "compactadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/4/4f/Bomag_road_rollers_23.jpg",    "comp_1.jpg"),
     ],
-    "pala_cargadora":         [
-        "https://picsum.photos/seed/pala1/800/500",
-        "https://picsum.photos/seed/pala2/800/500",
-        "https://picsum.photos/seed/pala3/800/500",
+    "pala_cargadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/6/69/CATERPILLAR_950_GC_Wheel_Loader_02.jpg", "pala_1.jpg"),
     ],
-    "bomba_hormigon":         [
-        "https://picsum.photos/seed/bomb1/800/500",
-        "https://picsum.photos/seed/bomb2/800/500",
-        "https://picsum.photos/seed/bomb3/800/500",
+    "bomba_hormigon": [
+        ("https://upload.wikimedia.org/wikipedia/commons/e/ef/Putzmeister_concrete_pump.JPEG", "bomb_1.jpg"),
     ],
-    "carretilla_elevadora":   [
-        "https://picsum.photos/seed/carr1/800/500",
-        "https://picsum.photos/seed/carr2/800/500",
-        "https://picsum.photos/seed/carr3/800/500",
+    "carretilla_elevadora": [
+        ("https://upload.wikimedia.org/wikipedia/commons/b/bc/Carretilla_nisan_2.500kg.jpg", "carr_1.jpg"),
     ],
 }
-DEFAULT_PHOTOS = [
-    "https://picsum.photos/seed/maq1/800/500",
-    "https://picsum.photos/seed/maq2/800/500",
-    "https://picsum.photos/seed/maq3/800/500",
-]
+
+
+def fetch_type_photos(mtype_str: str) -> list[str]:
+    """Devuelve las rutas web locales de las fotos de un tipo de maquinaria.
+
+    Las fotos deben haber sido descargadas previamente con download_demo_photos.py.
+    Si el archivo no existe localmente, lo omite.
+    """
+    sources = WIKIMEDIA_PHOTOS.get(mtype_str, [])
+    result: list[str] = []
+    for _url, fname in sources:
+        dest = _FRONTEND_STATIC / "images" / "machinery" / mtype_str / fname
+        if dest.exists():
+            result.append(f"/static/images/machinery/{mtype_str}/{fname}")
+    return result
 
 
 def load_env(env: str):
@@ -182,7 +174,7 @@ def main():
     javier  = users["j.ruiz@grupofontana.com"]
     ana     = users["a.martinez@edificacionesroca.es"]
 
-    # ── 2. MAQUINARIA (con fotos Picsum) ─────────────────────────────────────
+    # ── 2. MAQUINARIA (con fotos reales de Wikimedia) ────────────────────────
     print("\n[2/7] Maquinaria...")
     machinery_data = [
         # david@demo.com — Lleida (máquinas destacadas para la demo)
@@ -213,16 +205,21 @@ def main():
             Machinery.title == m["title"], Machinery.owner_id == m["owner"].id
         ).first()
         if existing:
-            # Actualizar fotos si aún no tiene
-            if not existing.images or existing.images == "null" or existing.images == "[]":
-                photos = PHOTOS.get(m["type"].value, DEFAULT_PHOTOS)
-                existing.images = json.dumps(photos)
-                print(f"  ↳ {m['title']} (fotos añadidas)")
+            # Actualizar fotos si aún no tiene (o si son URLs externas de Picsum)
+            imgs = json.loads(existing.images) if existing.images and existing.images not in ("null", "[]") else []
+            needs_update = not imgs or all("picsum" in u for u in imgs)
+            if needs_update:
+                photos = fetch_type_photos(m["type"].value)
+                if photos:
+                    existing.images = json.dumps(photos)
+                    print(f"  ↳ {m['title']} (fotos actualizadas)")
+                else:
+                    print(f"  ↳ {m['title']}")
             else:
                 print(f"  ↳ {m['title']}")
             machineries.append(existing)
             continue
-        photos = PHOTOS.get(m["type"].value, DEFAULT_PHOTOS)
+        photos = fetch_type_photos(m["type"].value)
         obj = Machinery(
             title=m["title"], description=m["desc"],
             machinery_type=m["type"], owner_id=m["owner"].id,

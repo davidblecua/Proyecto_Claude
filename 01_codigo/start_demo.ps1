@@ -1,4 +1,4 @@
-# start_demo.ps1 — Arranca el entorno demo de RentaMaq (DEV)
+# start_demo.ps1 — Arranca el entorno demo de RentaMaq
 # Uso: .\start_demo.ps1 [dev|pre|pro]
 
 param(
@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$env:PYTHONUTF8 = "1"
 
 $BackendDir = Join-Path $PSScriptRoot "backend"
 
@@ -14,19 +15,25 @@ Write-Host ""
 Write-Host "=== RentaMaq Demo — entorno: $($Env.ToUpper()) ===" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Seed de datos demo
-Write-Host "[1/2] Cargando datos demo..." -ForegroundColor Yellow
+# 1. Fotos de maquinaria (descarga una sola vez, ~2 min si es la primera vez)
+Write-Host "[1/3] Comprobando fotos de maquinaria..." -ForegroundColor Yellow
 Push-Location $BackendDir
 try {
-    $env:PYTHONUTF8 = "1"
-    python seeds/seed_demo.py --env $Env
-    if ($LASTEXITCODE -ne 0) { throw "Seed falló con código $LASTEXITCODE" }
+    python seeds/download_demo_photos.py
 } finally {
     Pop-Location
 }
 
+# 2. Seed de datos demo
 Write-Host ""
-Write-Host "[2/2] Arrancando servidor..." -ForegroundColor Yellow
+Write-Host "[2/3] Cargando datos demo..." -ForegroundColor Yellow
+Push-Location $BackendDir
+try {
+    python seeds/seed_demo.py --env $Env
+    if ($LASTEXITCODE -ne 0) { throw "Seed fallo con codigo $LASTEXITCODE" }
+} finally {
+    Pop-Location
+}
 
 # Puerto por entorno
 $Port = switch ($Env) {
@@ -35,6 +42,8 @@ $Port = switch ($Env) {
     "pro" { 8002 }
 }
 
+Write-Host ""
+Write-Host "[3/3] Arrancando servidor..." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Servidor disponible en  http://localhost:$Port" -ForegroundColor Green
 Write-Host ""

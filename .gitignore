@@ -9,3 +9,14 @@
 
 # Dentro de 01_codigo, no ignorar nada
 !/01_codigo/**
+
+# Excluir binarios grandes generados por scripts de seed (se descargan con download_demo_photos.py)
+01_codigo/frontend/static/images/machinery/**/*.jpg
+01_codigo/frontend/static/images/machinery/**/*.jpeg
+01_codigo/frontend/static/images/machinery/**/*.JPG
+01_codigo/frontend/static/images/machinery/**/*.JPEG
+01_codigo/frontend/static/uploads/machines/
+
+# Excluir archivos de entorno con credenciales reales
+01_codigo/backend/.env.pre
+01_codigo/backend/.env.pro

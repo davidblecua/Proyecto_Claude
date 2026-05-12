@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# start_demo.sh — Arranca el entorno demo de RentaMaq (DEV)
+# start_demo.sh — Arranca el entorno demo de RentaMaq
 # Uso: bash start_demo.sh [dev|pre|pro]
 
 set -e
@@ -19,11 +19,15 @@ echo ""
 echo "=== RentaMaq Demo — entorno: ${ENV^^} ==="
 echo ""
 
-echo "[1/2] Cargando datos demo..."
+echo "[1/3] Comprobando fotos de maquinaria..."
+(cd "$BACKEND_DIR" && python seeds/download_demo_photos.py)
+
+echo ""
+echo "[2/3] Cargando datos demo..."
 (cd "$BACKEND_DIR" && python seeds/seed_demo.py --env "$ENV")
 
 echo ""
-echo "[2/2] Arrancando servidor en http://localhost:$PORT"
+echo "[3/3] Arrancando servidor en http://localhost:$PORT"
 echo ""
 echo "Credenciales demo:"
 echo "  Propietario : david@demo.com   / Demo1234!"
