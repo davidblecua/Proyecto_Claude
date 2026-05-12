@@ -209,6 +209,27 @@ async function showEditMachineryModal(machineryId) {
                             <label><input type="checkbox" id="editDelivery" ${machinery.delivery_available ? 'checked' : ''}> Entrega disponible</label>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label>Fotos de la máquina</label>
+                        <div id="editExistingPhotos" class="photo-preview-grid">
+                            ${(machinery.images || []).map((url, i) => `
+                                <div class="photo-thumb-wrap" id="editThumb_${i}">
+                                    <img src="${escHtml(url)}" class="photo-thumb" onerror="this.src='https://via.placeholder.com/100x75?text=Foto'">
+                                    ${i === 0 ? '<span class="photo-cover-badge">Portada</span>' : ''}
+                                    <button type="button" class="photo-thumb-del" onclick="removeExistingPhoto('${escHtml(url)}', 'editThumb_${i}')" title="Eliminar">×</button>
+                                </div>`).join('')}
+                        </div>
+                        <div id="editAddPhotoArea" class="photo-upload-area photo-upload-area-sm" style="margin-top:0.5rem;"
+                             onclick="document.getElementById('editNewPhotos').click()">
+                            <input type="file" id="editNewPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display:none"
+                                   onchange="handlePhotoSelect(this, 'editNewPreviewGrid', 'editAddPhotoHint')">
+                            <div id="editAddPhotoHint" class="photo-upload-hint" style="padding:0.5rem;">
+                                <span>+ Añadir más fotos</span>
+                                <small>JPG, PNG o WebP · máx. 5 MB</small>
+                            </div>
+                        </div>
+                        <div id="editNewPreviewGrid" class="photo-preview-grid"></div>
+                    </div>
                     <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('editMachineryModal').remove()">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Guardar Cambios</button>
@@ -219,6 +240,11 @@ async function showEditMachineryModal(machineryId) {
     `;
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.getElementById('editNewPreviewGrid').addEventListener('click', e => e.stopPropagation());
+    // Guardar URLs a borrar
+    modal._photosToDelete = [];
+    window._editPhotosToDelete = [];
+    window._editPendingFiles = [];
 }
 
 async function handleEditMachinery(event, machineryId) {
@@ -234,6 +260,22 @@ async function handleEditMachinery(event, machineryId) {
     };
     try {
         await apiRequest(`/machinery/${machineryId}`, { method: 'PUT', body: JSON.stringify(data) });
+
+        // Eliminar fotos marcadas para borrar
+        if (window._editPhotosToDelete && window._editPhotosToDelete.length > 0) {
+            await apiRequest(`/machinery/${machineryId}/photos`, {
+                method: 'DELETE',
+                body: JSON.stringify({ urls: window._editPhotosToDelete })
+            });
+        }
+
+        // Subir fotos nuevas
+        if (window._editPendingFiles && window._editPendingFiles.length > 0) {
+            await uploadPhotos(machineryId, window._editPendingFiles);
+        }
+
+        window._editPhotosToDelete = [];
+        window._editPendingFiles = [];
         document.getElementById('editMachineryModal').remove();
         showAlert('Máquina actualizada correctamente', 'success');
         showMyMachinery();
@@ -322,6 +364,147 @@ async function handleBlockDates(event, machineryId) {
 function escHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Gestión de fotos ──────────────────────────────────────────────────────────
+
+/** Ficheros pendientes de subida en el formulario de nueva máquina */
+let _pendingFiles = [];
+
+/**
+ * Maneja la selección de ficheros en un <input type="file">.
+ * previewGridId: id del contenedor de miniaturas.
+ * hintId: id del hint de la zona de drop (se oculta cuando hay fotos).
+ */
+function handlePhotoSelect(input, previewGridId, hintId) {
+    const MAX = 10;
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
+    const isEdit = previewGridId === 'editNewPreviewGrid';
+
+    const files = Array.from(input.files);
+    const target = isEdit ? '_editPendingFiles' : null;
+    const existing = isEdit ? (window._editPendingFiles || []) : _pendingFiles;
+
+    // Contar fotos ya existentes en DB (para edición)
+    const dbCount = isEdit
+        ? document.querySelectorAll('#editExistingPhotos .photo-thumb-wrap:not(.removed)').length
+        : 0;
+
+    const errEl = document.getElementById(isEdit ? null : 'photoError');
+    const totalAfter = dbCount + existing.length + files.length;
+
+    if (totalAfter > MAX) {
+        if (errEl) { errEl.textContent = t('photos_max_reached'); errEl.style.display = 'block'; }
+        input.value = '';
+        return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    const grid = document.getElementById(previewGridId);
+    const hint = document.getElementById(hintId);
+
+    files.forEach(file => {
+        if (!ALLOWED.includes(file.type)) {
+            showAlert(`Formato no permitido: ${file.name}. Usa JPG, PNG o WebP.`, 'danger');
+            return;
+        }
+        if (file.size > MAX_BYTES) {
+            showAlert(`${file.name} supera el máximo de 5 MB.`, 'danger');
+            return;
+        }
+
+        if (isEdit) {
+            window._editPendingFiles = window._editPendingFiles || [];
+            window._editPendingFiles.push(file);
+        } else {
+            _pendingFiles.push(file);
+        }
+
+        const idx = isEdit
+            ? (window._editPendingFiles.length - 1)
+            : (_pendingFiles.length - 1);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'photo-thumb-wrap';
+        wrap.id = `newThumb_${previewGridId}_${idx}`;
+
+        const img = document.createElement('img');
+        img.className = 'photo-thumb';
+        const reader = new FileReader();
+        reader.onload = e => { img.src = e.target.result; };
+        reader.readAsDataURL(file);
+
+        const isCover = !isEdit && _pendingFiles.length === 1 && dbCount === 0;
+        const badge = isCover ? '<span class="photo-cover-badge">Portada</span>' : '';
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'photo-thumb-del';
+        del.title = 'Eliminar';
+        del.textContent = '×';
+        del.onclick = () => {
+            wrap.remove();
+            if (isEdit) {
+                window._editPendingFiles.splice(idx, 1);
+            } else {
+                _pendingFiles.splice(idx, 1);
+            }
+            refreshCoverBadge(previewGridId, dbCount);
+        };
+
+        wrap.appendChild(img);
+        if (badge) wrap.insertAdjacentHTML('beforeend', badge);
+        wrap.appendChild(del);
+        grid.appendChild(wrap);
+    });
+
+    if (hint) hint.style.display = 'none';
+    refreshCoverBadge(previewGridId, dbCount);
+    input.value = '';  // reset para permitir seleccionar el mismo fichero otra vez
+}
+
+/** Actualiza el badge "Portada" para que siempre esté en el primer thumb. */
+function refreshCoverBadge(previewGridId, existingDbCount) {
+    const grid = document.getElementById(previewGridId);
+    if (!grid) return;
+    grid.querySelectorAll('.photo-cover-badge').forEach(b => b.remove());
+    if (existingDbCount === 0) {
+        const first = grid.querySelector('.photo-thumb-wrap');
+        if (first) first.insertAdjacentHTML('afterbegin', '<span class="photo-cover-badge">Portada</span>');
+    }
+}
+
+/** Marca una foto existente (en edición) para ser eliminada al guardar. */
+function removeExistingPhoto(url, thumbId) {
+    window._editPhotosToDelete = window._editPhotosToDelete || [];
+    window._editPhotosToDelete.push(url);
+    const el = document.getElementById(thumbId);
+    if (el) { el.classList.add('removed'); el.style.display = 'none'; }
+    // Si era la portada, actualizar badge en el siguiente thumb
+    const remaining = document.querySelectorAll('#editExistingPhotos .photo-thumb-wrap:not(.removed)');
+    document.querySelectorAll('#editExistingPhotos .photo-cover-badge').forEach(b => b.remove());
+    if (remaining.length > 0) {
+        remaining[0].insertAdjacentHTML('afterbegin', '<span class="photo-cover-badge">Portada</span>');
+    }
+}
+
+/** Sube un array de File al endpoint de fotos de una máquina. */
+async function uploadPhotos(machineryId, files) {
+    if (!files || files.length === 0) return;
+    const fd = new FormData();
+    files.forEach(f => fd.append('files', f));
+    const token = localStorage.getItem('access_token');
+    const resp = await fetch(`/api/v1/machinery/${machineryId}/photos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd
+    });
+    if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error al subir las fotos');
+    }
+    return resp.json();
 }
 
 function buildMachineryTypeOptions(selected) {
@@ -443,7 +626,22 @@ function showAddMachinery() {
                 <div class="form-group">
                     <label><input type="checkbox" id="machDelivery"> Entrega disponible</label>
                 </div>
-                
+
+                <div class="form-group">
+                    <label>Fotos de la máquina <span class="req">*</span></label>
+                    <div id="photoUploadArea" class="photo-upload-area" onclick="document.getElementById('machPhotos').click()">
+                        <input type="file" id="machPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display:none"
+                               onchange="handlePhotoSelect(this, 'photoPreviewGrid', 'photoUploadHint')">
+                        <div id="photoUploadHint" class="photo-upload-hint">
+                            <span class="photo-upload-icon">📷</span>
+                            <span>Haz clic para añadir fotos</span>
+                            <small>JPG, PNG o WebP · máx. 5 MB · hasta 10 fotos</small>
+                        </div>
+                    </div>
+                    <div id="photoPreviewGrid" class="photo-preview-grid"></div>
+                    <p id="photoError" class="text-danger" style="display:none;font-size:0.85rem;margin-top:0.25rem;"></p>
+                </div>
+
                 <div class="form-group">
                     <button type="submit" class="btn btn-success">Publicar Máquina</button>
                     <button type="button" class="btn btn-secondary" onclick="showMyMachinery()">Cancelar</button>
@@ -451,6 +649,8 @@ function showAddMachinery() {
             </form>
         </div>
     `;
+    // Evitar que el click en la zona de preview propague al área de upload
+    document.getElementById('photoPreviewGrid').addEventListener('click', e => e.stopPropagation());
 }
 
 /**
@@ -458,7 +658,14 @@ function showAddMachinery() {
  */
 async function handleAddMachinery(event) {
     event.preventDefault();
-    
+
+    // Validar que haya al menos 1 foto
+    if (_pendingFiles.length === 0) {
+        const errEl = document.getElementById('photoError');
+        if (errEl) { errEl.textContent = t('photos_min_required'); errEl.style.display = 'block'; }
+        return;
+    }
+
     const machineryData = {
         title: document.getElementById('machTitle').value,
         description: document.getElementById('machDescription').value,
@@ -472,13 +679,19 @@ async function handleAddMachinery(event) {
         deposit: parseFloat(document.getElementById('machDeposit').value) || 0,
         delivery_available: document.getElementById('machDelivery').checked
     };
-    
+
     try {
-        await apiRequest('/machinery', {
+        const created = await apiRequest('/machinery', {
             method: 'POST',
             body: JSON.stringify(machineryData)
         });
-        
+
+        // Subir fotos si hay ficheros pendientes
+        if (_pendingFiles.length > 0) {
+            await uploadPhotos(created.id, _pendingFiles);
+        }
+
+        _pendingFiles = [];
         showAlert('¡Máquina publicada exitosamente!', 'success');
         showMyMachinery();
     } catch (error) {

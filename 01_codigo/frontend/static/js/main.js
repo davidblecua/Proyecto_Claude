@@ -523,7 +523,9 @@ function showMachineryModal(machinery) {
     modal.id = 'machineryDetailModal';
 
     const images = machinery.images && machinery.images.length > 0 ? machinery.images : [];
-    const imgUrl = images[0] || 'https://via.placeholder.com/600x300?text=' + encodeURIComponent(machinery.title);
+
+    // Carrusel o imagen única
+    const galleryHtml = buildGalleryHtml(images, machinery.title);
 
     modal.innerHTML = `
         <div class="modal-dialog modal-lg">
@@ -532,8 +534,7 @@ function showMachineryModal(machinery) {
                 <button class="modal-close" onclick="document.getElementById('machineryDetailModal').remove()">&times;</button>
             </div>
             <div class="modal-body">
-                <img src="${imgUrl}" alt="${escHtml(machinery.title)}" style="width:100%;height:220px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
-                     onerror="this.src='https://via.placeholder.com/600x220?text=Sin+Imagen'">
+                ${galleryHtml}
 
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
                     <span class="badge badge-info">${translateMachineryType(machinery.machinery_type)}</span>
@@ -1345,4 +1346,62 @@ function logout() {
     updateNavbarForAuthenticatedUser();
     showAlert('Sesión cerrada correctamente', 'success');
     window.location.href = '/';
+}
+
+// ── Galería de fotos en modal de detalle ──────────────────────────────────────
+
+/**
+ * Devuelve el HTML del bloque de imagen/carrusel para el modal de detalle.
+ */
+function buildGalleryHtml(images, title) {
+    const placeholder = `https://via.placeholder.com/600x260?text=${encodeURIComponent(title || 'Sin imagen')}`;
+
+    if (!images || images.length === 0) {
+        return `<img src="${placeholder}" alt="${escHtml(title)}"
+                     style="width:100%;height:260px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
+                     loading="lazy" onerror="this.src='${placeholder}'">`;
+    }
+
+    if (images.length === 1) {
+        return `<img src="${escHtml(images[0])}" alt="${escHtml(title)}"
+                     style="width:100%;height:260px;object-fit:cover;border-radius:var(--border-radius);margin-bottom:1rem;"
+                     loading="lazy" onerror="this.src='${placeholder}'">`;
+    }
+
+    // Carrusel con múltiples fotos
+    const thumbs = images.map((url, i) =>
+        `<img src="${escHtml(url)}" class="gallery-thumb ${i === 0 ? 'active' : ''}"
+              loading="lazy" alt="Foto ${i + 1}"
+              onclick="galleryGoTo(this.closest('.detail-gallery'), ${i})"
+              onerror="this.style.display='none'">`
+    ).join('');
+
+    return `
+        <div class="detail-gallery" data-index="0" data-total="${images.length}"
+             data-images='${JSON.stringify(images).replace(/'/g, "&#39;")}'>
+            <div class="gallery-main-wrap">
+                <button class="gallery-arrow gallery-prev" onclick="galleryStep(this.closest('.detail-gallery'), -1)" aria-label="Anterior">&#8249;</button>
+                <img class="gallery-main" src="${escHtml(images[0])}" alt="${escHtml(title)}"
+                     loading="lazy" onerror="this.src='${placeholder}'">
+                <button class="gallery-arrow gallery-next" onclick="galleryStep(this.closest('.detail-gallery'), 1)" aria-label="Siguiente">&#8250;</button>
+                <span class="gallery-counter">1 / ${images.length}</span>
+            </div>
+            <div class="gallery-thumbs">${thumbs}</div>
+        </div>`;
+}
+
+function galleryGoTo(gallery, idx) {
+    if (!gallery) return;
+    const images = JSON.parse(gallery.dataset.images || '[]');
+    if (idx < 0 || idx >= images.length) return;
+    gallery.dataset.index = idx;
+    gallery.querySelector('.gallery-main').src = images[idx];
+    gallery.querySelector('.gallery-counter').textContent = `${idx + 1} / ${images.length}`;
+    gallery.querySelectorAll('.gallery-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
+}
+
+function galleryStep(gallery, dir) {
+    const total = parseInt(gallery.dataset.total || '1');
+    const cur = parseInt(gallery.dataset.index || '0');
+    galleryGoTo(gallery, (cur + dir + total) % total);
 }

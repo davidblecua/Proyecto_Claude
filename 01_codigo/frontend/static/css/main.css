@@ -1954,3 +1954,188 @@ body.env-dev,
 body.env-pre {
     padding-top: 28px;
 }
+
+/* ── Subida de fotos ─────────────────────────────────────────────────────── */
+
+.photo-upload-area {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--gray-50, #fafafa);
+}
+.photo-upload-area:hover {
+    border-color: var(--primary);
+    background: #f0f7ff;
+}
+.photo-upload-area-sm {
+    padding: 0.75rem 1rem;
+}
+
+.photo-upload-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+.photo-upload-icon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+.photo-upload-hint small {
+    font-size: 0.78rem;
+    color: var(--gray-400);
+}
+
+/* Grid de miniaturas */
+.photo-preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.photo-thumb-wrap {
+    position: relative;
+    width: 90px;
+    height: 68px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid var(--gray-200);
+    flex-shrink: 0;
+}
+.photo-thumb-wrap:first-child {
+    border-color: var(--primary);
+}
+
+.photo-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.photo-thumb-del {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 2;
+}
+.photo-thumb-del:hover {
+    background: var(--danger, #dc3545);
+}
+
+.photo-cover-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(59,130,246,0.85);
+    color: #fff;
+    font-size: 0.65rem;
+    text-align: center;
+    padding: 1px 0;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ── Galería en modal de detalle ─────────────────────────────────────────── */
+
+.detail-gallery {
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.gallery-main-wrap {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    background: var(--gray-100);
+}
+
+.gallery-main {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.gallery-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.gallery-arrow:hover { background: rgba(0,0,0,0.7); }
+.gallery-prev { left: 8px; }
+.gallery-next { right: 8px; }
+
+.gallery-counter {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 0.78rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+
+.gallery-thumbs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--gray-100);
+    overflow-x: auto;
+}
+
+.gallery-thumb {
+    width: 56px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+    transition: opacity 0.15s, border-color 0.15s;
+}
+.gallery-thumb.active,
+.gallery-thumb:hover {
+    opacity: 1;
+    border-color: var(--primary);
+}

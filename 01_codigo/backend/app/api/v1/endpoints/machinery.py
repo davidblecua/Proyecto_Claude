@@ -2,7 +2,8 @@
 Endpoints de Maquinaria
 Gestión y búsqueda de maquinaria
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+import json
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
@@ -14,6 +15,7 @@ from app.schemas.machinery import (
 from app.models.machinery import MachineryBlockReason
 from datetime import date
 from app.services.machinery_service import MachineryService
+from app.services.storage_service import validate_and_read, save_file, delete_file, MAX_PHOTOS
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.machinery import MachineryType
@@ -249,3 +251,74 @@ def delete_machinery_block(
     """Elimina un bloqueo de fechas (solo propietario)"""
     MachineryService.delete_block(db, block_id, current_user.id)
     return {"message": "Bloqueo eliminado correctamente"}
+
+
+@router.post("/{machinery_id}/photos", response_model=MachineryResponse, status_code=status.HTTP_200_OK)
+async def upload_machinery_photos(
+    machinery_id: int,
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Sube entre 1 y 10 fotos para una máquina (solo propietario).
+    Las fotos se añaden a las ya existentes (sin superar el límite de 10).
+    Formatos permitidos: JPG, PNG, WebP. Máximo 5 MB por foto.
+    """
+    machinery = MachineryService.get_machinery_by_id(db, machinery_id)
+    if not machinery:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Maquinaria no encontrada")
+    if machinery.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para modificar esta maquinaria")
+
+    existing: list = json.loads(machinery.images) if machinery.images else []
+
+    if len(files) == 0:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Debes subir al menos una foto.")
+    if len(existing) + len(files) > MAX_PHOTOS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Límite de {MAX_PHOTOS} fotos por máquina. Actualmente tienes {len(existing)}."
+        )
+
+    new_urls = []
+    for f in files:
+        content, ext = await validate_and_read(f)
+        url = save_file(content, ext, machinery_id)
+        new_urls.append(url)
+
+    updated = existing + new_urls
+    machinery.images = json.dumps(updated)
+    db.commit()
+    db.refresh(machinery)
+    return machinery
+
+
+@router.delete("/{machinery_id}/photos", response_model=MachineryResponse)
+def delete_machinery_photos(
+    machinery_id: int,
+    urls: List[str] = Body(..., embed=True),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina fotos concretas de una máquina (solo propietario).
+    Recibe: {"urls": ["/static/uploads/machines/1/abc.jpg", ...]}
+    """
+    machinery = MachineryService.get_machinery_by_id(db, machinery_id)
+    if not machinery:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Maquinaria no encontrada")
+    if machinery.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para modificar esta maquinaria")
+
+    existing: list = json.loads(machinery.images) if machinery.images else []
+    urls_set = set(urls)
+
+    for url in urls_set:
+        delete_file(url)
+
+    remaining = [u for u in existing if u not in urls_set]
+    machinery.images = json.dumps(remaining)
+    db.commit()
+    db.refresh(machinery)
+    return machinery
